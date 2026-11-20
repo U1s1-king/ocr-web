@@ -9,6 +9,7 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '')
   const target = env.VITE_API_TARGET || 'https://diffs-entered-goat-formula.trycloudflare.com'
+  const base = env.VITE_BASE || '/'
   const proxy = {
     '/api': {
       target,
@@ -19,6 +20,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    base,
     plugins: [react(), tailwindcss()],
     server: {
       port: 5173,

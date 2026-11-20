@@ -10,8 +10,9 @@
  *   <LogoMark />    只有图形本体，无底色（开屏、水印）
  */
 
-const SEAL = '/logo-seal.png'
-const SEAL_WHITE = '/logo-seal-white.png'
+const BASE = import.meta.env.BASE_URL || '/'
+const SEAL = `${BASE}logo-seal.png`
+const SEAL_WHITE = `${BASE}logo-seal-white.png`
 
 export function LogoMark({
   className = '',
