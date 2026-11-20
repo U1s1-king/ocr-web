@@ -1,0 +1,30 @@
+# 依赖与构建产物
+node_modules
+dist
+dist-ssr
+*.tsbuildinfo
+.wrangler
+
+# 运行/测试产物
+shots
+screenshots
+*.log
+logs
+
+# 本地环境与编辑器
+.env
+.env.local
+*.local
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.sw?
+
+# 大文件源稿（保留在 assets/brand 的压缩版，psd 不入库）
+assets/brand/*.psd
+*.zip
+
+# Cloudflare Tunnel 令牌（不入库）
+deploy/tunnel/tunnel_token.txt

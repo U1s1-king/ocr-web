@@ -1,0 +1,1091 @@
+{
+  "schemaVersion": 1,
+  "unit": "canvas",
+  "canvas": {
+    "width": 300,
+    "height": 424.29
+  },
+  "markers": [
+    {
+      "id": "top-left",
+      "x": 7.14,
+      "y": 7.14,
+      "size": 8.57
+    },
+    {
+      "id": "top-right",
+      "x": 284.29,
+      "y": 7.14,
+      "size": 8.57
+    },
+    {
+      "id": "bottom-left",
+      "x": 7.14,
+      "y": 408.57,
+      "size": 8.57
+    },
+    {
+      "id": "bottom-right",
+      "x": 284.29,
+      "y": 408.57,
+      "size": 8.57
+    }
+  ],
+  "blocks": [
+    {
+      "id": "b1",
+      "type": "text",
+      "region": {
+        "x": 15.71,
+        "y": 392.86,
+        "width": 268.57,
+        "height": 6.29
+      },
+      "text": "政治答题卡 第1面（共1面）",
+      "style": {
+        "fontSize": 2.8,
+        "fontWeight": "bold",
+        "textAlign": "center",
+        "lineHeight": 1.1
+      }
+    },
+    {
+      "id": "b2",
+      "type": "text",
+      "region": {
+        "x": 15.71,
+        "y": 400,
+        "width": 268.57,
+        "height": 7.14
+      },
+      "text": "超出黑色矩形边框限定区域的答案无效",
+      "style": {
+        "fontSize": 2.5,
+        "fontWeight": "normal",
+        "textAlign": "center",
+        "lineHeight": 1.2
+      }
+    },
+    {
+      "id": "b3",
+      "type": "text",
+      "region": {
+        "x": 15.71,
+        "y": 18.57,
+        "width": 185.71,
+        "height": 10
+      },
+      "text": "普通高等学校招生全国统一考试",
+      "style": {
+        "fontSize": 4.6,
+        "fontWeight": "bold",
+        "textAlign": "center",
+        "lineHeight": 1.1
+      }
+    },
+    {
+      "id": "b4",
+      "type": "text",
+      "region": {
+        "x": 15.71,
+        "y": 28.86,
+        "width": 185.71,
+        "height": 14.29
+      },
+      "text": "政治 答 题 卡",
+      "style": {
+        "fontSize": 7.2,
+        "fontWeight": "bold",
+        "textAlign": "center",
+        "lineHeight": 1.1
+      }
+    },
+    {
+      "id": "b5",
+      "type": "text",
+      "region": {
+        "x": 15.71,
+        "y": 43.71,
+        "width": 185.71,
+        "height": 10.29
+      },
+      "text": "姓名：　　　　  准考证号：　　　　  考场号：　　　　  座位号：　　　　",
+      "style": {
+        "fontSize": 3.7885714285714287,
+        "fontWeight": "normal",
+        "textAlign": "left",
+        "lineHeight": 1.3
+      }
+    },
+    {
+      "id": "b6",
+      "type": "text",
+      "region": {
+        "x": 15.71,
+        "y": 54.71,
+        "width": 185.71,
+        "height": 10.71
+      },
+      "text": "准考证号",
+      "style": {
+        "fontSize": 3.1,
+        "fontWeight": "bold",
+        "textAlign": "left",
+        "lineHeight": 1.2
+      }
+    },
+    {
+      "id": "b7",
+      "type": "text",
+      "region": {
+        "x": 15.71,
+        "y": 66.14,
+        "width": 185.71,
+        "height": 25.71
+      },
+      "text": "1. 答题前，请将姓名、准考证号填写清楚，并核对条形码上的信息。\n2. 选择题必须使用 2B 铅笔填涂；非选择题必须使用 0.5mm 黑色签字笔书写。\n3. 请按题号在各题答题区域内作答，超出答题区域书写的答案无效。\n4. 保持卡面清洁，不要折叠、不要弄破。",
+      "style": {
+        "fontSize": 2.75,
+        "fontWeight": "normal",
+        "textAlign": "left",
+        "lineHeight": 1.55
+      }
+    },
+    {
+      "id": "b8",
+      "type": "text",
+      "region": {
+        "x": 15.71,
+        "y": 92.57,
+        "width": 185.71,
+        "height": 7.14
+      },
+      "text": "正确填涂：■　　错误填涂：√　×　○　　缺考标记：□",
+      "style": {
+        "fontSize": 2.9,
+        "fontWeight": "normal",
+        "textAlign": "left",
+        "lineHeight": 1.2
+      }
+    },
+    {
+      "id": "b9",
+      "type": "text",
+      "region": {
+        "x": 207.14,
+        "y": 18.57,
+        "width": 77.14,
+        "height": 37.14
+      },
+      "text": "贴条形码区",
+      "style": {
+        "fontSize": 2.9,
+        "fontWeight": "normal",
+        "textAlign": "center",
+        "lineHeight": 1.3
+      }
+    },
+    {
+      "id": "b10",
+      "type": "text",
+      "region": {
+        "x": 207.14,
+        "y": 60,
+        "width": 77.14,
+        "height": 14.29
+      },
+      "text": "试卷类型　缺考标记",
+      "style": {
+        "fontSize": 2.9,
+        "fontWeight": "normal",
+        "textAlign": "center",
+        "lineHeight": 1.3
+      }
+    },
+    {
+      "id": "b11",
+      "type": "text",
+      "region": {
+        "x": 15.71,
+        "y": 103.29,
+        "width": 268.57,
+        "height": 8
+      },
+      "text": "一、选择题（1–16 题，每小题 3 分，共 48 分）",
+      "style": {
+        "fontSize": 3.9,
+        "fontWeight": "bold",
+        "textAlign": "left",
+        "lineHeight": 1.1
+      }
+    },
+    {
+      "id": "b12",
+      "type": "text",
+      "region": {
+        "x": 15.71,
+        "y": 147.86,
+        "width": 130.71,
+        "height": 8
+      },
+      "text": "二、非选择题 17（10 分）",
+      "style": {
+        "fontSize": 3.5,
+        "fontWeight": "bold",
+        "textAlign": "left",
+        "lineHeight": 1.1
+      }
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "displayNumber": 1,
+      "type": "mark",
+      "score": 3,
+      "region": {
+        "x": 15.71,
+        "y": 112.14,
+        "width": 37.66,
+        "height": 10.29
+      },
+      "choices": [
+        {
+          "value": "A",
+          "region": {
+            "x": 0.27,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "B",
+          "region": {
+            "x": 0.44,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "C",
+          "region": {
+            "x": 0.62,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "D",
+          "region": {
+            "x": 0.79,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        }
+      ]
+    },
+    {
+      "id": "q2",
+      "displayNumber": 2,
+      "type": "mark",
+      "score": 3,
+      "region": {
+        "x": 61.9,
+        "y": 112.14,
+        "width": 37.66,
+        "height": 10.29
+      },
+      "choices": [
+        {
+          "value": "A",
+          "region": {
+            "x": 0.27,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "B",
+          "region": {
+            "x": 0.44,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "C",
+          "region": {
+            "x": 0.62,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "D",
+          "region": {
+            "x": 0.79,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        }
+      ]
+    },
+    {
+      "id": "q3",
+      "displayNumber": 3,
+      "type": "mark",
+      "score": 3,
+      "region": {
+        "x": 108.08,
+        "y": 112.14,
+        "width": 37.66,
+        "height": 10.29
+      },
+      "choices": [
+        {
+          "value": "A",
+          "region": {
+            "x": 0.27,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "B",
+          "region": {
+            "x": 0.44,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "C",
+          "region": {
+            "x": 0.62,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "D",
+          "region": {
+            "x": 0.79,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        }
+      ]
+    },
+    {
+      "id": "q4",
+      "displayNumber": 4,
+      "type": "mark",
+      "score": 3,
+      "region": {
+        "x": 154.26,
+        "y": 112.14,
+        "width": 37.66,
+        "height": 10.29
+      },
+      "choices": [
+        {
+          "value": "A",
+          "region": {
+            "x": 0.27,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "B",
+          "region": {
+            "x": 0.44,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "C",
+          "region": {
+            "x": 0.62,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "D",
+          "region": {
+            "x": 0.79,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        }
+      ]
+    },
+    {
+      "id": "q5",
+      "displayNumber": 5,
+      "type": "mark",
+      "score": 3,
+      "region": {
+        "x": 200.45,
+        "y": 112.14,
+        "width": 37.66,
+        "height": 10.29
+      },
+      "choices": [
+        {
+          "value": "A",
+          "region": {
+            "x": 0.27,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "B",
+          "region": {
+            "x": 0.44,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "C",
+          "region": {
+            "x": 0.62,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "D",
+          "region": {
+            "x": 0.79,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        }
+      ]
+    },
+    {
+      "id": "q6",
+      "displayNumber": 6,
+      "type": "mark",
+      "score": 3,
+      "region": {
+        "x": 246.63,
+        "y": 112.14,
+        "width": 37.66,
+        "height": 10.29
+      },
+      "choices": [
+        {
+          "value": "A",
+          "region": {
+            "x": 0.27,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "B",
+          "region": {
+            "x": 0.44,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "C",
+          "region": {
+            "x": 0.62,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "D",
+          "region": {
+            "x": 0.79,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        }
+      ]
+    },
+    {
+      "id": "q7",
+      "displayNumber": 7,
+      "type": "mark",
+      "score": 3,
+      "region": {
+        "x": 15.71,
+        "y": 122.43,
+        "width": 37.66,
+        "height": 10.29
+      },
+      "choices": [
+        {
+          "value": "A",
+          "region": {
+            "x": 0.27,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "B",
+          "region": {
+            "x": 0.44,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "C",
+          "region": {
+            "x": 0.62,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "D",
+          "region": {
+            "x": 0.79,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        }
+      ]
+    },
+    {
+      "id": "q8",
+      "displayNumber": 8,
+      "type": "mark",
+      "score": 3,
+      "region": {
+        "x": 61.9,
+        "y": 122.43,
+        "width": 37.66,
+        "height": 10.29
+      },
+      "choices": [
+        {
+          "value": "A",
+          "region": {
+            "x": 0.27,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "B",
+          "region": {
+            "x": 0.44,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "C",
+          "region": {
+            "x": 0.62,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "D",
+          "region": {
+            "x": 0.79,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        }
+      ]
+    },
+    {
+      "id": "q9",
+      "displayNumber": 9,
+      "type": "mark",
+      "score": 3,
+      "region": {
+        "x": 108.08,
+        "y": 122.43,
+        "width": 37.66,
+        "height": 10.29
+      },
+      "choices": [
+        {
+          "value": "A",
+          "region": {
+            "x": 0.27,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "B",
+          "region": {
+            "x": 0.44,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "C",
+          "region": {
+            "x": 0.62,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "D",
+          "region": {
+            "x": 0.79,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        }
+      ]
+    },
+    {
+      "id": "q10",
+      "displayNumber": 10,
+      "type": "mark",
+      "score": 3,
+      "region": {
+        "x": 154.26,
+        "y": 122.43,
+        "width": 37.66,
+        "height": 10.29
+      },
+      "choices": [
+        {
+          "value": "A",
+          "region": {
+            "x": 0.27,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "B",
+          "region": {
+            "x": 0.44,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "C",
+          "region": {
+            "x": 0.62,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "D",
+          "region": {
+            "x": 0.79,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        }
+      ]
+    },
+    {
+      "id": "q11",
+      "displayNumber": 11,
+      "type": "mark",
+      "score": 3,
+      "region": {
+        "x": 200.45,
+        "y": 122.43,
+        "width": 37.66,
+        "height": 10.29
+      },
+      "choices": [
+        {
+          "value": "A",
+          "region": {
+            "x": 0.27,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "B",
+          "region": {
+            "x": 0.44,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "C",
+          "region": {
+            "x": 0.62,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "D",
+          "region": {
+            "x": 0.79,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        }
+      ]
+    },
+    {
+      "id": "q12",
+      "displayNumber": 12,
+      "type": "mark",
+      "score": 3,
+      "region": {
+        "x": 246.63,
+        "y": 122.43,
+        "width": 37.66,
+        "height": 10.29
+      },
+      "choices": [
+        {
+          "value": "A",
+          "region": {
+            "x": 0.27,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "B",
+          "region": {
+            "x": 0.44,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "C",
+          "region": {
+            "x": 0.62,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "D",
+          "region": {
+            "x": 0.79,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        }
+      ]
+    },
+    {
+      "id": "q13",
+      "displayNumber": 13,
+      "type": "mark",
+      "score": 3,
+      "region": {
+        "x": 15.71,
+        "y": 132.71,
+        "width": 37.66,
+        "height": 10.29
+      },
+      "choices": [
+        {
+          "value": "A",
+          "region": {
+            "x": 0.27,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "B",
+          "region": {
+            "x": 0.44,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "C",
+          "region": {
+            "x": 0.62,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "D",
+          "region": {
+            "x": 0.79,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        }
+      ]
+    },
+    {
+      "id": "q14",
+      "displayNumber": 14,
+      "type": "mark",
+      "score": 3,
+      "region": {
+        "x": 61.9,
+        "y": 132.71,
+        "width": 37.66,
+        "height": 10.29
+      },
+      "choices": [
+        {
+          "value": "A",
+          "region": {
+            "x": 0.27,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "B",
+          "region": {
+            "x": 0.44,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "C",
+          "region": {
+            "x": 0.62,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "D",
+          "region": {
+            "x": 0.79,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        }
+      ]
+    },
+    {
+      "id": "q15",
+      "displayNumber": 15,
+      "type": "mark",
+      "score": 3,
+      "region": {
+        "x": 108.08,
+        "y": 132.71,
+        "width": 37.66,
+        "height": 10.29
+      },
+      "choices": [
+        {
+          "value": "A",
+          "region": {
+            "x": 0.27,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "B",
+          "region": {
+            "x": 0.44,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "C",
+          "region": {
+            "x": 0.62,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "D",
+          "region": {
+            "x": 0.79,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        }
+      ]
+    },
+    {
+      "id": "q16",
+      "displayNumber": 16,
+      "type": "mark",
+      "score": 3,
+      "region": {
+        "x": 154.26,
+        "y": 132.71,
+        "width": 37.66,
+        "height": 10.29
+      },
+      "choices": [
+        {
+          "value": "A",
+          "region": {
+            "x": 0.27,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "B",
+          "region": {
+            "x": 0.44,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "C",
+          "region": {
+            "x": 0.62,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        },
+        {
+          "value": "D",
+          "region": {
+            "x": 0.79,
+            "y": 0.18,
+            "width": 0.14,
+            "height": 0.64
+          }
+        }
+      ]
+    },
+    {
+      "id": "q17",
+      "displayNumber": 17,
+      "type": "subjective",
+      "score": 10,
+      "region": {
+        "x": 15.71,
+        "y": 157,
+        "width": 130.71,
+        "height": 109.59
+      }
+    },
+    {
+      "id": "q18",
+      "displayNumber": 18,
+      "type": "subjective",
+      "score": 12,
+      "region": {
+        "x": 15.71,
+        "y": 268.31,
+        "width": 130.71,
+        "height": 130.26
+      }
+    },
+    {
+      "id": "q19",
+      "displayNumber": 19,
+      "type": "subjective",
+      "score": 14,
+      "region": {
+        "x": 153.57,
+        "y": 147.86,
+        "width": 130.71,
+        "height": 119.89
+      }
+    },
+    {
+      "id": "q20",
+      "displayNumber": 20,
+      "type": "subjective",
+      "score": 16,
+      "region": {
+        "x": 153.57,
+        "y": 269.46,
+        "width": 130.71,
+        "height": 129.11
+      }
+    }
+  ],
+  "answerKey": {}
+}

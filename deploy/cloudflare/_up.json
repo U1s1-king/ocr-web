@@ -1,0 +1,32 @@
+[
+ {
+  "path": "/favicon.svg",
+  "hash": "683f62a6e2260272a380a110930ef6d1",
+  "ct": "image/svg+xml",
+  "name": "favicon.svg"
+ },
+ {
+  "path": "/index.html",
+  "hash": "79faeb50f47ca59cbdbe040b72861396",
+  "ct": "text/html",
+  "name": "index.html"
+ },
+ {
+  "path": "/_redirects",
+  "hash": "bd0faa11644d929b33c4ae5e89c92bcf",
+  "ct": "application/octet-stream",
+  "name": "_redirects"
+ },
+ {
+  "path": "/assets/index-3H6jut3N.js",
+  "hash": "1e86a5b07a7da9a3a37809faddede59d",
+  "ct": "text/javascript",
+  "name": "index-3H6jut3N.js"
+ },
+ {
+  "path": "/assets/index-CiT5IQeD.css",
+  "hash": "0a4970bbcddf79d55bdde99eb5c84da2",
+  "ct": "text/css",
+  "name": "index-CiT5IQeD.css"
+ }
+]

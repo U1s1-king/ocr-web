@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR Scan Flow - UI Interactive Prototype</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts Inter & Noto Sans SC -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        },
+                        figma: {
+                            bg: '#1e1e1e',
+                            canvas: '#121824',
+                            card: '#1e293b'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans SC', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        /* Mobile Device Shadow */
+        .mobile-frame {
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 12px #1e293b;
+        }
+        /* Scanner Pulse Animation */
+        @keyframes scanPulse {
+            0% { top: 10%; opacity: 0.8; }
+            50% { top: 85%; opacity: 1; }
+            100% { top: 10%; opacity: 0.8; }
+        }
+        .scan-line {
+            animation: scanPulse 3s infinite ease-in-out;
+        }
+        /* Spin Animation */
+        @keyframes spinSlow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+            animation: spinSlow 3s linear infinite;
+        }
+    </style>
+</head>
+<body class="bg-figma-canvas text-slate-100 font-sans min-h-screen flex flex-col overflow-x-hidden antialiased">
+
+    <!-- Top Header / App Mode Bar -->
+    <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 sticky top-0 z-50 flex flex-wrap items-center justify-between gap-4 shadow-lg">
+        <div class="flex items-center space-x-3">
+            <div class="bg-brand-600 p-2 rounded-lg text-white shadow-md shadow-brand-600/30">
+                <i data-lucide="scan-text" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-base text-white flex items-center gap-2">
+                    OCR Scan Flow <span class="text-xs bg-brand-600/30 text-brand-400 px-2 py-0.5 rounded border border-brand-500/30">Figma Prototype</span>
+                </h1>
+                <p class="text-xs text-slate-400">试卷 OCR 扫描与多端协同系统 UI 复现</p>
+            </div>
+        </div>
+
+        <!-- Mode Toggles -->
+        <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-sm">
+            <button id="btn-mobile-mode" onclick="switchMainView('mobile')" class="px-4 py-1.5 rounded-lg font-medium transition-all flex items-center gap-2 bg-brand-600 text-white shadow-sm">
+                <i data-lucide="smartphone" class="w-4 h-4"></i>
+                <span>移动端 App (9屏)</span>
+            </button>
+            <button id="btn-web-mode" onclick="switchMainView('web')" class="px-4 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition-all flex items-center gap-2">
+                <i data-lucide="monitor" class="w-4 h-4"></i>
+                <span>Web 管理端 (6屏)</span>
+            </button>
+            <button id="btn-overview-mode" onclick="switchMainView('overview')" class="px-4 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition-all flex items-center gap-2">
+                <i data-lucide="grid" class="w-4 h-4"></i>
+                <span>Figma 15屏全景</span>
+            </button>
+        </div>
+
+        <!-- Right Quick Controls -->
+        <div class="flex items-center space-x-2 text-xs">
+            <span class="text-slate-400 hidden sm:inline">交互提示: 点击屏幕按钮可触发流程跳转</span>
+            <button onclick="resetFlows()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> 重置流程
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN INTERACTIVE CONTAINER -->
+    <main class="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 relative">
+
+        <!-- ========================================================================= -->
+        <!-- VIEW 1: MOBILE APP FLOW INTERACTIVE FRAME -->
+        <!-- ========================================================================= -->
+        <div id="view-mobile" class="w-full max-w-6xl flex flex-col items-center">
+            
+            <!-- Mobile Flow Stepper -->
+            <div class="w-full max-w-4xl mb-6 overflow-x-auto pb-2">
+                <div class="flex items-center justify-between min-w-[700px] text-xs px-2">
+                    <template id="mobile-step-template">
+                        <!-- JS injected -->
+                    </template>
+                    <div id="mobile-stepper-container" class="flex items-center justify-between w-full"></div>
+                </div>
+            </div>
+
+            <!-- Mobile Phone Mockup Screen Outer Frame -->
+            <div class="relative w-[360px] h-[720px] bg-slate-900 rounded-[40px] mobile-frame border-4 border-slate-700 overflow-hidden flex flex-col select-none">
+                
+                <!-- Phone Top Bar (Notch & Status) -->
+                <div class="bg-black text-white px-6 pt-3 pb-1 flex justify-between items-center text-xs z-50 shrink-0">
+                    <span class="font-semibold">9:41</span>
+                    <div class="w-16 h-3 bg-black rounded-full border border-slate-800 flex items-center justify-center">
+                        <div class="w-2 h-2 rounded-full bg-slate-900"></div>
+                    </div>
+                    <div class="flex items-center space-x-1 text-[10px]">
+                        <i data-lucide="wifi" class="w-3 h-3"></i>
+                        <i data-lucide="battery" class="w-3.5 h-3.5"></i>
+                    </div>
+                </div>
+
+                <!-- PHONE SCREEN CONTAINER (1-9 SCREENS) -->
+                <div class="flex-1 bg-white text-slate-800 relative overflow-y-auto flex flex-col">
+                    
+                    <!-- ------------------------------------ -->
+                    <!-- 01 START / WELCOME SCREEN -->
+                    <!-- ------------------------------------ -->
+                    <div id="m-screen-1" class="mobile-screen absolute inset-0 bg-gradient-to-b from-brand-600 to-brand-700 text-white p-6 flex flex-col justify-between">
+                        <div class="pt-12 text-center flex flex-col items-center">
+                            <div class="w-20 h-20 bg-white/10 backdrop-blur border border-white/20 rounded-2xl flex items-center justify-center mb-6 shadow-xl">
+                                <i data-lucide="file-text" class="w-10 h-10 text-white"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold tracking-tight">试卷OCR扫描工具</h2>
+                            <p class="text-xs text-brand-100 mt-2 opacity-90">双挡板OCR，大排版替换</p>
+                        </div>
+
+                        <div class="space-y-3 mb-8">
+                            <button onclick="navMobile(2)" class="w-full py-3.5 bg-white text-brand-600 rounded-xl font-bold text-sm shadow-lg hover:bg-slate-100 transition active:scale-[0.98]">
+                                登录信息
+                            </button>
+                            <button onclick="navMobile(2)" class="w-full py-3.5 bg-white/10 backdrop-blur border border-white/30 text-white rounded-xl font-medium text-sm hover:bg-white/20 transition">
+                                顺畅精简版
+                            </button>
+                            <p class="text-[11px] text-center text-brand-200">授权指南与链接</p>
+                        </div>
+                    </div>
+
+                    <!-- ------------------------------------ -->
+                    <!-- 02 HOME SCREEN -->
+                    <!-- ------------------------------------ -->
+                    <div id="m-screen-2" class="mobile-screen absolute inset-0 bg-slate-50 flex flex-col hidden">
+                        <!-- Top Header -->
+                        <div class="bg-brand-600 text-white p-4 pt-6 pb-6 rounded-b-2xl shadow-md">
+                            <div class="flex justify-between items-center mb-4">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">
+                                        <i data-lucide="user" class="w-4 h-4"></i>
+                                    </div>
+                                    <span class="text-sm font-semibold">扫描历史</span>
+                                </div>
+                                <div class="flex space-x-3">
+                                    <i data-lucide="bell" class="w-4 h-4 cursor-pointer"></i>
+                                    <i data-lucide="settings" class="w-4 h-4 cursor-pointer"></i>
+                                </div>
+                            </div>
+                            <!-- Search Bar -->
+                            <div class="bg-white/15 backdrop-blur rounded-xl px-3 py-2 flex items-center text-xs text-white placeholder-white/70 border border-white/20">
+                                <i data-lucide="search" class="w-4 h-4 mr-2 opacity-80"></i>
+                                <span>搜索历史试卷、题目...</span>
+                            </div>
+                        </div>
+
+                        <!-- Card List -->
+                        <div class="p-4 space-y-4 flex-1 overflow-y-auto">
+                            <!-- Section 1 -->
+                            <div>
+                                <h3 class="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">扫描历史</h3>
+                                <div onclick="navMobile(3)" class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between cursor-pointer hover:border-brand-500 transition">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="p-2.5 bg-brand-50 rounded-lg text-brand-600">
+                                            <i data-lucide="file-check-2" class="w-5 h-5"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-bold text-slate-800">扫描剪定历史</p>
+                                            <p class="text-[10px] text-slate-400">智能裁剪 · 极致排版</p>
+                                        </div>
+                                    </div>
+                                    <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+                                </div>
+                            </div>
+
+                            <!-- Section 2 -->
+                            <div>
+                                <h3 class="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">任务列表</h3>
+                                <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between cursor-pointer hover:border-brand-500 transition">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="p-2.5 bg-emerald-50 rounded-lg text-emerald-600">
+                                            <i data-lucide="layers" class="w-5 h-5"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-bold text-slate-800">绝招扫描剪定</p>
+                                            <p class="text-[10px] text-slate-400">试卷精简 · 清除手写</p>
+                                        </div>
+                                    </div>
+                                    <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bottom Navigation Bar & Floating Camera Button -->
+                        <div class="relative bg-white border-t border-slate-200 py-2 px-6 flex justify-between items-center text-[10px] text-slate-500">
+                            <button class="flex flex-col items-center text-brand-600 font-medium">
+                                <i data-lucide="home" class="w-4 h-4 mb-0.5"></i>
+                                <span>首页</span>
+                            </button>
+                            <button class="flex flex-col items-center">
+                                <i data-lucide="file-text" class="w-4 h-4 mb-0.5"></i>
+                                <span>文档</span>
+                            </button>
+                            
+                            <!-- Floating Action Button -->
+                            <button onclick="navMobile(3)" class="absolute -top-5 left-1/2 -translate-x-1/2 w-12 h-12 bg-brand-600 rounded-full text-white flex items-center justify-center shadow-lg shadow-brand-600/40 hover:scale-105 transition">
+                                <i data-lucide="plus" class="w-6 h-6"></i>
+                            </button>
+
+                            <button class="flex flex-col items-center">
+                                <i data-lucide="clock" class="w-4 h-4 mb-0.5"></i>
+                                <span>历史</span>
+                            </button>
+                            <button class="flex flex-col items-center">
+                                <i data-lucide="user" class="w-4 h-4 mb-0.5"></i>
+                                <span>我的</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ------------------------------------ -->
+                    <!-- 03 CAMERA SCANNER SCREEN -->
+                    <!-- ------------------------------------ -->
+                    <div id="m-screen-3" class="mobile-screen absolute inset-0 bg-slate-950 text-white flex flex-col justify-between hidden">
+                        <!-- Top Controls -->
+                        <div class="p-4 flex justify-between items-center z-10 text-xs">
+                            <button onclick="navMobile(2)" class="p-1 text-slate-300 hover:text-white">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
+                            <div class="flex items-center space-x-4">
+                                <span class="bg-black/40 px-2.5 py-1 rounded-full text-[11px] flex items-center gap-1 border border-white/10">
+                                    <i data-lucide="zap-off" class="w-3 h-3 text-yellow-400"></i> 去阴影
+                                </span>
+                                <span class="bg-brand-600/80 px-2.5 py-1 rounded-full text-[11px] flex items-center gap-1">
+                                    <i data-lucide="crop" class="w-3 h-3"></i> 自动切边
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Camera Viewfinder -->
+                        <div class="relative flex-1 my-2 mx-4 border-2 border-brand-500/40 rounded-2xl overflow-hidden bg-slate-900 flex items-center justify-center">
+                            <!-- Simulated Document inside Viewfinder -->
+                            <div class="w-4/5 h-4/5 bg-slate-100 rounded shadow-2xl p-3 text-[7px] text-slate-700 overflow-hidden relative opacity-90 rotate-1">
+                                <div class="font-bold border-b pb-1 mb-1 text-[9px] text-slate-900">2023学年第一学期期末检测试卷</div>
+                                <div class="space-y-1">
+                                    <p>一、选择题 (每题3分，共30分)</p>
+                                    <p class="text-blue-700">1. 下列计算正确的是 (  )</p>
+                                    <p class="text-slate-500 pl-2">A. a²+a³=a⁵   B. (a²)³=a⁶</p>
+                                    <p class="text-blue-700">2. 若分式有意义，则x的取值范围...</p>
+                                </div>
+                                <!-- Hand-written mark overlay simulation -->
+                                <div class="absolute top-10 right-4 text-red-500 font-semibold rotate-12 border border-red-400 px-1 rounded text-[8px]">
+                                    √ 得分: 92
+                                </div>
+                            </div>
+
+                            <!-- Animated Scanning Laser Line -->
+                            <div class="scan-line absolute left-0 right-0 h-0.5 bg-brand-400 shadow-[0_0_15px_#3b82f6]"></div>
+
+                            <!-- Viewfinder Corner Overlay Borders -->
+                            <div class="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-brand-500"></div>
+                            <div class="absolute top-3 right-3 w-6 h-6 border-t-2 border-r-2 border-brand-500"></div>
+                            <div class="absolute bottom-3 left-3 w-6 h-6 border-b-2 border-l-2 border-brand-500"></div>
+                            <div class="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 border-brand-500"></div>
+                        </div>
+
+                        <!-- Shutter Controls Bar -->
+                        <div class="bg-black/80 backdrop-blur p-5 flex flex-col items-center gap-4">
+                            <!-- Mode Switcher -->
+                            <div class="flex space-x-6 text-xs text-slate-400 font-medium">
+                                <span>常规文字</span>
+                                <span>双页</span>
+                                <span class="text-brand-400 font-bold border-b-2 border-brand-400 pb-0.5">拍试卷</span>
+                                <span>表格</span>
+                                <span>发票</span>
+                            </div>
+
+                            <!-- Shutter Button -->
+                            <div class="flex items-center justify-around w-full max-w-xs pt-1">
+                                <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
+                                    <i data-lucide="image" class="w-5 h-5 text-slate-300"></i>
+                                </div>
+                                <button onclick="navMobile(4)" class="w-16 h-16 rounded-full border-4 border-white p-1 flex items-center justify-center active:scale-95 transition">
+                                    <div class="w-full h-full bg-white rounded-full"></div>
+                                </button>
+                                <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
+                                    <i data-lucide="sparkles" class="w-5 h-5 text-yellow-400"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ------------------------------------ -->
+                    <!-- 04 BOUNDING BOX ALIGN SCREEN -->
+                    <!-- ------------------------------------ -->
+                    <div id="m-screen-4" class="mobile-screen absolute inset-0 bg-slate-950 text-white flex flex-col justify-between hidden">
+                        <!-- Header Bar -->
+                        <div class="p-4 flex justify-between items-center z-10 text-xs border-b border-slate-800">
+                            <button onclick="navMobile(3)" class="text-slate-400 hover:text-white">
+                                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                            </button>
+                            <span class="font-bold text-sm">识别中 / 自格调整</span>
+                            <button onclick="navMobile(5)" class="text-brand-400 font-semibold">下一步</button>
+                        </div>
+
+                        <!-- Canvas Area with Adjustable Crop Box -->
+                        <div class="relative flex-1 m-4 bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center p-2 border border-slate-800">
+                            <div class="relative w-full h-full max-h-[460px] bg-slate-200 rounded p-4 text-[8px] text-slate-800 flex flex-col justify-between shadow-inner">
+                                <div class="font-bold border-b pb-1 text-slate-900 text-[10px]">高三数学第一次模拟考试试卷</div>
+                                <div class="space-y-2 opacity-70">
+                                    <p>1. 已知集合 A={x|x²-x-2<0}, B={x|x>0}，则 A∩B = ( )</p>
+                                    <p>2. 复数 z = (1+i)/(1-i) 的虚部是 ( )</p>
+                                    <p>3. 设向量 a=(1,2), b=(m,1)，若 a ⊥ b，则 m = ____</p>
+                                </div>
+                                <div class="text-right text-[7px] text-slate-500">页码 1 / 4</div>
+
+                                <!-- Crop Bounding Box with Cyan Lines & Drag Handles -->
+                                <div class="absolute inset-3 border-2 border-brand-400 bg-brand-500/10 rounded flex flex-col justify-between pointer-events-none">
+                                    <div class="flex justify-between -mt-2 -ml-2 -mr-2">
+                                        <div class="w-4 h-4 bg-white border-2 border-brand-600 rounded-full shadow pointer-events-auto cursor-pointer"></div>
+                                        <div class="w-4 h-4 bg-white border-2 border-brand-600 rounded-full shadow pointer-events-auto cursor-pointer"></div>
+                                    </div>
+                                    <div class="flex justify-between -mb-2 -ml-2 -mr-2">
+                                        <div class="w-4 h-4 bg-white border-2 border-brand-600 rounded-full shadow pointer-events-auto cursor-pointer"></div>
+                                        <div class="w-4 h-4 bg-white border-2 border-brand-600 rounded-full shadow pointer-events-auto cursor-pointer"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Bar -->
+                        <div class="p-4 bg-slate-900 border-t border-slate-800 flex justify-between items-center">
+                            <div class="flex space-x-3">
+                                <button class="p-2 bg-slate-800 rounded-lg text-slate-300 hover:text-white">
+                                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                                </button>
+                                <button class="p-2 bg-slate-800 rounded-lg text-slate-300 hover:text-white">
+                                    <i data-lucide="scan-line" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <button onclick="navMobile(5)" class="px-6 py-2.5 bg-brand-600 text-white rounded-xl text-xs font-bold shadow-lg hover:bg-brand-500 active:scale-95 transition">
+                                实现还原裁剪
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ------------------------------------ -->
+                    <!-- 05 PROCESSING SCREEN -->
+                    <!-- ------------------------------------ -->
+                    <div id="m-screen-5" class="mobile-screen absolute inset-0 bg-brand-600 text-white flex flex-col items-center justify-center p-6 text-center hidden">
+                        <!-- Animated Circular Loader -->
+                        <div class="relative w-28 h-28 flex items-center justify-center mb-6">
+                            <div class="absolute inset-0 border-4 border-white/20 rounded-full"></div>
+                            <div class="absolute inset-0 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                            <i data-lucide="sparkles" class="w-10 h-10 text-white animate-pulse"></i>
+                        </div>
+
+                        <h3 class="text-xl font-bold tracking-wide">AI OCR 识别中</h3>
+                        <p class="text-xs text-brand-100 mt-2 opacity-80">正在智能去手写、去除擦痕并重排版...</p>
+
+                        <!-- Auto Jump Simulation Trigger -->
+                        <button onclick="navMobile(6)" class="mt-12 px-4 py-1.5 bg-white/10 border border-white/30 text-white rounded-full text-xs hover:bg-white/20 transition">
+                            点击跳过加载 &rarr;
+                        </button>
+                    </div>
+
+                    <!-- ------------------------------------ -->
+                    <!-- 06 OCR RESULT SCREEN -->
+                    <!-- ------------------------------------ -->
+                    <div id="m-screen-6" class="mobile-screen absolute inset-0 bg-slate-100 text-slate-800 flex flex-col hidden">
+                        <!-- Navbar -->
+                        <div class="bg-white p-3.5 border-b flex justify-between items-center text-xs font-bold sticky top-0 shadow-sm">
+                            <button onclick="navMobile(4)" class="text-slate-500"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                            <span>OCR Result</span>
+                            <button onclick="navMobile(7)" class="text-brand-600 font-bold">排版整</button>
+                        </div>
+
+                        <!-- Result Content -->
+                        <div class="flex-1 p-4 overflow-y-auto space-y-3">
+                            <div class="flex justify-between items-center text-xs text-slate-500 font-semibold mb-1">
+                                <span>识别文本</span>
+                                <span class="text-brand-600 cursor-pointer">调整框</span>
+                            </div>
+
+                            <!-- Question Card 1 -->
+                            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="bg-brand-100 text-brand-700 text-[10px] font-bold px-2 py-0.5 rounded">【第1题】</span>
+                                    <span class="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">待校验</span>
+                                </div>
+                                <p class="text-xs text-slate-700 leading-relaxed font-mono">
+                                    1. 已知 R={1, 2, 3, 4}，4/7 满足条件，则 Q=_____
+                                </p>
+                            </div>
+
+                            <!-- Question Card 2 -->
+                            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="bg-brand-100 text-brand-700 text-[10px] font-bold px-2 py-0.5 rounded">【第2题】</span>
+                                    <span class="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">排版有</span>
+                                </div>
+                                <p class="text-xs text-slate-700 leading-relaxed">
+                                    整体根据直角坐标极极坐标方程 P=4cosθ...
+                                </p>
+                            </div>
+
+                            <!-- Question Card 3 -->
+                            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="bg-brand-100 text-brand-700 text-[10px] font-bold px-2 py-0.5 rounded">【第3题】</span>
+                                    <span class="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">待排</span>
+                                </div>
+                                <p class="text-xs text-slate-700 leading-relaxed">
+                                    已知函数 f(x) = x³ - ax² + 1 ...
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Bottom Action Button -->
+                        <div class="p-3 bg-white border-t border-slate-200">
+                            <button onclick="navMobile(7)" class="w-full py-2.5 bg-brand-600 text-white rounded-xl text-xs font-bold shadow-md hover:bg-brand-500 transition">
+                                进入 Detail Editor 编辑
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ------------------------------------ -->
+                    <!-- 07 DETAIL EDITOR SCREEN -->
+                    <!-- ------------------------------------ -->
+                    <div id="m-screen-7" class="mobile-screen absolute inset-0 bg-slate-100 text-slate-800 flex flex-col hidden">
+                        <!-- Header Bar -->
+                        <div class="bg-white p-3.5 border-b flex justify-between items-center text-xs font-bold shadow-sm">
+                            <button onclick="navMobile(6)" class="text-slate-500"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                            <span>Detail Editor</span>
+                            <button onclick="navMobile(8)" class="text-brand-600">保存/导出</button>
+                        </div>
+
+                        <!-- Secondary Tab Selector -->
+                        <div class="bg-slate-200/60 p-1 flex text-[11px] font-medium border-b border-slate-300">
+                            <button class="flex-1 py-1 text-center bg-white rounded shadow-sm font-bold text-brand-600">文本</button>
+                            <button class="flex-1 py-1 text-center text-slate-600">模版</button>
+                            <button class="flex-1 py-1 text-center text-slate-600">校正</button>
+                            <button class="flex-1 py-1 text-center text-slate-600">去手写</button>
+                        </div>
+
+                        <!-- Editor Canvas Content -->
+                        <div class="flex-1 p-3 overflow-y-auto space-y-3">
+                            <!-- Image / Preview Box -->
+                            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm relative">
+                                <div class="text-[10px] text-slate-400 mb-1">原图 / 识别对比:</div>
+                                <div class="p-2 bg-slate-50 rounded border text-xs text-slate-700 space-y-1 font-mono">
+                                    <p class="font-bold text-slate-900">攻克中国图表极拓... </p>
+                                    <p>1. 提炼题目规律，恢复更完整图表层级，消除杂音。</p>
+                                    <p>2. 深度清除手写痕迹。</p>
+                                </div>
+                                <span class="absolute bottom-2 right-2 text-[10px] text-brand-600 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">选手题</span>
+                            </div>
+
+                            <!-- Interactive Tool Action Bar -->
+                            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                                <button class="w-full py-2 bg-brand-50 text-brand-600 rounded-lg text-xs font-bold border border-brand-200 flex items-center justify-center gap-2 mb-2 hover:bg-brand-100 transition">
+                                    <i data-lucide="wand-2" class="w-4 h-4"></i> 一键去除手写
+                                </button>
+                                <div class="grid grid-cols-3 gap-2 text-center text-[11px]">
+                                    <button class="py-1.5 bg-slate-100 hover:bg-slate-200 rounded font-medium text-slate-700">取消</button>
+                                    <button class="py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded font-medium">替换</button>
+                                    <button onclick="navMobile(8)" class="py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded font-medium">一键提交</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-white border-t border-slate-200">
+                            <button onclick="navMobile(8)" class="w-full py-2.5 bg-brand-600 text-white rounded-xl text-xs font-bold">
+                                下一步: Export Settings
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ------------------------------------ -->
+                    <!-- 08 EXPORT SETTINGS SCREEN -->
+                    <!-- ------------------------------------ -->
+                    <div id="m-screen-8" class="mobile-screen absolute inset-0 bg-slate-900/60 backdrop-blur-sm text-slate-800 flex flex-col justify-end hidden">
+                        <!-- Bottom Sheet Card -->
+                        <div class="bg-white rounded-t-2xl p-5 space-y-4 shadow-2xl border-t border-slate-100 animate-in slide-in-from-bottom duration-300">
+                            <div class="w-12 h-1 bg-slate-300 rounded-full mx-auto"></div>
+                            <div class="flex justify-between items-center border-b pb-2">
+                                <h3 class="font-bold text-sm text-slate-800">Export Settings</h3>
+                                <button onclick="navMobile(7)" class="text-slate-400"><i data-lucide="x" class="w-4 h-4"></i></button>
+                            </div>
+
+                            <p class="text-xs text-slate-500 font-medium">导出线框设置</p>
+
+                            <!-- Format Selectors -->
+                            <div class="grid grid-cols-3 gap-3">
+                                <div class="border-2 border-brand-600 bg-brand-50/50 p-3 rounded-xl flex flex-col items-center justify-center text-center cursor-pointer">
+                                    <i data-lucide="file-text" class="w-6 h-6 text-brand-600 mb-1"></i>
+                                    <span class="text-xs font-bold text-brand-700">Word</span>
+                                </div>
+                                <div class="border border-slate-200 p-3 rounded-xl flex flex-col items-center justify-center text-center cursor-pointer hover:border-brand-500">
+                                    <i data-lucide="file-spread-sheet" class="w-6 h-6 text-red-500 mb-1"></i>
+                                    <span class="text-xs font-medium text-slate-700">PDF</span>
+                                </div>
+                                <div class="border border-slate-200 p-3 rounded-xl flex flex-col items-center justify-center text-center cursor-pointer hover:border-brand-500">
+                                    <i data-lucide="image" class="w-6 h-6 text-emerald-500 mb-1"></i>
+                                    <span class="text-xs font-medium text-slate-700">图片</span>
+                                </div>
+                            </div>
+
+                            <!-- Options Toggles -->
+                            <div class="space-y-2 text-xs pt-2 border-t">
+                                <label class="flex items-center justify-between cursor-pointer">
+                                    <span class="text-slate-700">保留原本手写痕迹</span>
+                                    <input type="checkbox" class="w-4 h-4 accent-brand-600">
+                                </label>
+                                <label class="flex items-center justify-between cursor-pointer">
+                                    <span class="text-slate-700">自动去除考卷阴影</span>
+                                    <input type="checkbox" class="w-4 h-4 accent-brand-600" checked>
+                                </label>
+                            </div>
+
+                            <button onclick="navMobile(9)" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-xs shadow-lg shadow-brand-600/30 transition">
+                                确认导出
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ------------------------------------ -->
+                    <!-- 09 SHARE / HISTORY SCREEN -->
+                    <!-- ------------------------------------ -->
+                    <div id="m-screen-9" class="mobile-screen absolute inset-0 bg-white text-slate-800 flex flex-col items-center justify-between p-6 text-center hidden">
+                        <div class="pt-8"></div>
+
+                        <!-- Success Icon & Message -->
+                        <div class="flex flex-col items-center space-y-3">
+                            <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shadow-lg shadow-emerald-100">
+                                <i data-lucide="check-circle-2" class="w-12 h-12"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-900">成功提示!</h3>
+                            <p class="text-xs text-slate-500 max-w-[200px]">试卷成功处理完成并导出！已保存至历史记录。</p>
+                        </div>
+
+                        <!-- Share Buttons -->
+                        <div class="w-full space-y-3 mb-6">
+                            <button onclick="alert('微信分享组件已调起')" class="w-full py-3 bg-brand-600 text-white rounded-xl font-bold text-xs shadow-md hover:bg-brand-500 transition flex items-center justify-center gap-2">
+                                <i data-lucide="share-2" class="w-4 h-4"></i> 分享
+                            </button>
+                            <button onclick="navMobile(2)" class="w-full py-3 bg-slate-100 text-slate-700 rounded-xl font-medium text-xs hover:bg-slate-200 transition">
+                                分享草稿 / 返回首页
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Phone Home Bar at bottom -->
+                <div class="bg-black py-2 flex justify-center shrink-0">
+                    <div class="w-32 h-1 bg-slate-600 rounded-full"></div>
+                </div>
+            </div>
+
+            <!-- Mobile Controller Footer -->
+            <div class="mt-6 flex items-center gap-3">
+                <button onclick="stepMobile(-1)" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 flex items-center gap-1">
+                    <i data-lucide="chevron-left" class="w-4 h-4"></i> 上一步
+                </button>
+                <span id="mobile-step-indicator" class="text-xs text-slate-400 font-mono px-2">Screen 01 / 09</span>
+                <button onclick="stepMobile(1)" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold rounded-lg flex items-center gap-1 shadow">
+                    下一步 <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+
+
+        <!-- ========================================================================= -->
+        <!-- VIEW 2: WEB DASHBOARD FLOW INTERACTIVE FRAME -->
+        <!-- ========================================================================= -->
+        <div id="view-web" class="w-full max-w-6xl flex flex-col items-center hidden">
+            
+            <!-- Web Stepper Tabs -->
+            <div class="w-full mb-4 flex items-center justify-center overflow-x-auto pb-2">
+                <div id="web-stepper-container" class="flex space-x-2 bg-slate-900 p-1.5 rounded-xl border border-slate-800"></div>
+            </div>
+
+            <!-- Desktop Browser Window Frame -->
+            <div class="w-full bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden flex flex-col min-h-[620px]">
+                
+                <!-- Window Top Navigation Titlebar -->
+                <div class="bg-slate-950 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <div class="flex space-x-1.5">
+                            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                        </div>
+                        <span class="text-xs text-slate-400 font-mono ml-4">https://ocr-scan.dashboard.ai/workspace</span>
+                    </div>
+                    <div id="web-screen-title" class="text-xs font-bold text-brand-400 bg-brand-950/60 px-3 py-1 rounded-md border border-brand-800/40">
+                        10 Web Dashboard
+                    </div>
+                </div>
+
+                <!-- Main Web App Layout: Sidebar + Workspace -->
+                <div class="flex-1 flex overflow-hidden bg-slate-950 text-slate-200">
+                    
+                    <!-- Left Sidebar (Persistent across web screens) -->
+                    <aside class="w-56 bg-slate-900 border-r border-slate-800 p-4 flex flex-col justify-between shrink-0">
+                        <div class="space-y-6">
+                            <!-- Logo -->
+                            <div class="flex items-center space-x-2.5 px-2">
+                                <div class="bg-brand-600 p-1.5 rounded-lg text-white">
+                                    <i data-lucide="scan" class="w-5 h-5"></i>
+                                </div>
+                                <span class="font-bold text-sm text-white tracking-wide">OCR Scan</span>
+                            </div>
+
+                            <!-- Nav Menu -->
+                            <nav class="space-y-1 text-xs font-medium">
+                                <a href="#" onclick="navWeb(10); return false;" id="web-nav-10" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-brand-600 text-white">
+                                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                                    <span>文件管理</span>
+                                </a>
+                                <a href="#" onclick="navWeb(11); return false;" id="web-nav-11" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                                    <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                                    <span>批量上拆</span>
+                                </a>
+                                <a href="#" onclick="navWeb(12); return false;" id="web-nav-12" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                                    <i data-lucide="columns" class="w-4 h-4"></i>
+                                    <span>双栏编辑</span>
+                                </a>
+                                <a href="#" onclick="navWeb(13); return false;" id="web-nav-13" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                                    <i data-lucide="list-checks" class="w-4 h-4"></i>
+                                    <span>批排板框</span>
+                                </a>
+                                <a href="#" onclick="navWeb(15); return false;" id="web-nav-15" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                                    <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+                                    <span>数据统计</span>
+                                </a>
+                            </nav>
+                        </div>
+
+                        <!-- Bottom User Profile -->
+                        <div class="pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold">
+                                    A
+                                </div>
+                                <span class="font-medium text-slate-300">Admin User</span>
+                            </div>
+                            <i data-lucide="log-out" class="w-4 h-4 cursor-pointer hover:text-white"></i>
+                        </div>
+                    </aside>
+
+                    <!-- Right Main Content Area (Dynamic Screens 10-15) -->
+                    <main class="flex-1 overflow-y-auto bg-slate-950 p-6 relative">
+
+                        <!-- ------------------------------------ -->
+                        <!-- 10 WEB DASHBOARD SCREEN -->
+                        <!-- ------------------------------------ -->
+                        <div id="w-screen-10" class="web-screen space-y-6">
+                            <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                                <div>
+                                    <h2 class="text-lg font-bold text-white">文件管理</h2>
+                                    <p class="text-xs text-slate-400">选择试卷文件，开始智能 OCR 排版与提炼</p>
+                                </div>
+                                <button onclick="navWeb(11)" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-lg shadow-lg flex items-center gap-2">
+                                    <i data-lucide="upload" class="w-4 h-4"></i> 批量上传
+                                </button>
+                            </div>
+
+                            <!-- Big Drag & Drop Zone -->
+                            <div onclick="navWeb(11)" class="border-2 border-dashed border-slate-700 hover:border-brand-500 bg-slate-900/50 hover:bg-slate-900 rounded-2xl p-12 flex flex-col items-center justify-center cursor-pointer transition text-center group">
+                                <div class="w-16 h-16 bg-brand-600/10 text-brand-500 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                                    <i data-lucide="cloud-upload" class="w-8 h-8"></i>
+                                </div>
+                                <h3 class="text-sm font-bold text-slate-200">Drag & Drop Zone</h3>
+                                <p class="text-xs text-slate-400 mt-1">支持拖拽 JPG, PNG, PDF 批量试卷文件上传</p>
+                                <span class="mt-4 px-4 py-2 bg-brand-600 text-white rounded-lg text-xs font-semibold shadow">选择文件</span>
+                            </div>
+                        </div>
+
+                        <!-- ------------------------------------ -->
+                        <!-- 11 BATCH UPLOADING SCREEN -->
+                        <!-- ------------------------------------ -->
+                        <div id="w-screen-11" class="web-screen space-y-6 hidden">
+                            <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                                <h2 class="text-lg font-bold text-white">批量登录导入</h2>
+                                <button onclick="navWeb(12)" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-lg shadow">
+                                    开始批量识别 &rarr;
+                                </button>
+                            </div>
+
+                            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
+                                <p class="text-xs font-semibold text-slate-300">批量测试输入状态 (已导入 3 个文件)</p>
+                                
+                                <!-- File Upload Item 1 -->
+                                <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-center justify-between">
+                                    <div class="flex items-center space-x-3">
+                                        <i data-lucide="file-text" class="w-5 h-5 text-brand-500"></i>
+                                        <div>
+                                            <p class="text-xs font-medium text-slate-200">高三一模数学试卷.pdf</p>
+                                            <p class="text-[10px] text-slate-500">2.4 MB · 准备就绪</p>
+                                        </div>
+                                    </div>
+                                    <span class="text-xs text-emerald-400 font-semibold bg-emerald-950/60 px-2.5 py-1 rounded border border-emerald-800/40">100% Ready</span>
+                                </div>
+
+                                <!-- File Upload Item 2 -->
+                                <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-center justify-between">
+                                    <div class="flex items-center space-x-3">
+                                        <i data-lucide="file-text" class="w-5 h-5 text-amber-500"></i>
+                                        <div>
+                                            <p class="text-xs font-medium text-slate-200">初中物理单元测试卷.png</p>
+                                            <p class="text-[10px] text-slate-500">1.8 MB · 上传中...</p>
+                                        </div>
+                                    </div>
+                                    <div class="w-32 bg-slate-800 rounded-full h-2">
+                                        <div class="bg-brand-500 h-2 rounded-full w-2/3"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ------------------------------------ -->
+                        <!-- 12 SPLIT VIEW EDITOR SCREEN -->
+                        <!-- ------------------------------------ -->
+                        <div id="w-screen-12" class="web-screen h-full flex flex-col hidden">
+                            <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+                                <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                                    <span>双栏编辑器</span>
+                                    <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded">带框识别与校正</span>
+                                </h2>
+                                <div class="flex space-x-2">
+                                    <button onclick="navWeb(13)" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-lg shadow">
+                                        至批量视图
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Two Pane Grid Editor -->
+                            <div class="flex-1 grid grid-cols-12 gap-4 min-h-[420px]">
+                                <!-- Left Original Scan Pane -->
+                                <div class="col-span-6 bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col">
+                                    <div class="text-xs font-semibold text-slate-400 mb-2 flex justify-between">
+                                        <span>原始扫描图 (带定位框)</span>
+                                        <span class="text-brand-400 cursor-pointer">放缩 100%</span>
+                                    </div>
+                                    <div class="flex-1 bg-slate-200 rounded p-4 text-[9px] text-slate-800 relative overflow-hidden flex flex-col justify-between">
+                                        <div class="font-bold border-b pb-1 text-slate-900 text-xs">【第1题】</div>
+                                        <p class="text-slate-700">1. 顺应时局和推进国典策略...</p>
+                                        <p class="text-slate-700">2. M6...</p>
+                                        <p class="text-slate-700">3. 彻底摆脱股极绝险...</p>
+                                        <p class="text-red-600 font-handwriting">手写痕迹: 选 A 得 3 分</p>
+
+                                        <!-- Bounding overlay box -->
+                                        <div class="absolute inset-4 border-2 border-brand-500 bg-brand-500/10 pointer-events-none"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Right Recognized Structured Text Pane -->
+                                <div class="col-span-6 bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
+                                    <div>
+                                        <div class="text-xs font-semibold text-slate-400 mb-2 flex justify-between">
+                                            <span>OCR 识别与整排结果</span>
+                                            <span class="text-emerald-400">自动校正</span>
+                                        </div>
+                                        <div class="space-y-3">
+                                            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
+                                                <span class="bg-brand-900/60 text-brand-300 text-[10px] font-bold px-2 py-0.5 rounded border border-brand-700/40">【第1题】</span>
+                                                <p class="text-xs text-slate-200 font-mono">1. 顺应时局和推进国典策略</p>
+                                                <p class="text-xs text-slate-200 font-mono">2. M6</p>
+                                            </div>
+                                            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
+                                                <span class="bg-brand-900/60 text-brand-300 text-[10px] font-bold px-2 py-0.5 rounded border border-brand-700/40">【第2题】</span>
+                                                <p class="text-xs text-slate-200 font-mono">1. 彻底摆脱股极绝险...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="pt-3 border-t border-slate-800 flex justify-end space-x-2">
+                                        <button class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs">去手写</button>
+                                        <button onclick="navWeb(14)" class="px-4 py-1.5 bg-brand-600 hover:bg-brand-500 text-white rounded text-xs font-bold">修改/保存</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ------------------------------------ -->
+                        <!-- 13 BATCH OCR PANEL SCREEN -->
+                        <!-- ------------------------------------ -->
+                        <div id="w-screen-13" class="web-screen space-y-4 hidden">
+                            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                                <h2 class="text-base font-bold text-white">批量识别结果列表</h2>
+                                <button onclick="navWeb(14)" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-lg shadow">
+                                    导出所选 (3)
+                                </button>
+                            </div>
+
+                            <!-- Table -->
+                            <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden text-xs">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="bg-slate-950 border-b border-slate-800 text-slate-400 font-semibold">
+                                            <th class="p-3 w-8"><input type="checkbox" checked class="accent-brand-600"></th>
+                                            <th class="p-3">文件名称</th>
+                                            <th class="p-3">扫描时间</th>
+                                            <th class="p-3">状态</th>
+                                            <th class="p-3 text-right">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-800/60 text-slate-300">
+                                        <tr class="hover:bg-slate-800/40">
+                                            <td class="p-3"><input type="checkbox" checked class="accent-brand-600"></td>
+                                            <td class="p-3 font-medium text-white flex items-center gap-2">
+                                                <i data-lucide="file-check" class="w-4 h-4 text-brand-500"></i> 频考精选试卷_01
+                                            </td>
+                                            <td class="p-3 text-slate-500">2023-10-28</td>
+                                            <td class="p-3"><span class="bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded text-[10px] border border-emerald-800/40">识别完成</span></td>
+                                            <td class="p-3 text-right text-brand-400 hover:underline cursor-pointer" onclick="navWeb(12)">预览编辑</td>
+                                        </tr>
+                                        <tr class="hover:bg-slate-800/40">
+                                            <td class="p-3"><input type="checkbox" checked class="accent-brand-600"></td>
+                                            <td class="p-3 font-medium text-white flex items-center gap-2">
+                                                <i data-lucide="file-check" class="w-4 h-4 text-brand-500"></i> 频考精选试卷_02
+                                            </td>
+                                            <td class="p-3 text-slate-500">2023-10-28</td>
+                                            <td class="p-3"><span class="bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded text-[10px] border border-emerald-800/40">识别完成</span></td>
+                                            <td class="p-3 text-right text-brand-400 hover:underline cursor-pointer" onclick="navWeb(12)">预览编辑</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- ------------------------------------ -->
+                        <!-- 14 EXPORT & SAVE MODAL SCREEN -->
+                        <!-- ------------------------------------ -->
+                        <div id="w-screen-14" class="web-screen relative h-full flex flex-col justify-center items-center hidden">
+                            <!-- Backdrop Overlay -->
+                            <div class="bg-slate-900/90 border border-slate-700 p-6 rounded-2xl max-w-md w-full space-y-5 shadow-2xl">
+                                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                                    <h3 class="font-bold text-sm text-white">14 Export & Save - 导出设置</h3>
+                                    <button onclick="navWeb(13)" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+                                </div>
+
+                                <p class="text-xs text-slate-400">一键导出 Word (保留格式)</p>
+
+                                <div class="space-y-2">
+                                    <button onclick="navWeb(15)" class="w-full py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-bold shadow transition">
+                                        一键导出 Word
+                                    </button>
+                                    <button onclick="navWeb(15)" class="w-full py-2.5 bg-orange-600 hover:bg-orange-500 text-white rounded-lg text-xs font-bold shadow transition">
+                                        一键导出 PDF
+                                    </button>
+                                    <button onclick="navWeb(15)" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold">
+                                        去除手写痕迹导出
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ------------------------------------ -->
+                        <!-- 15 HISTORY & STATS SCREEN -->
+                        <!-- ------------------------------------ -->
+                        <div id="w-screen-15" class="web-screen space-y-6 hidden">
+                            <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                                <h2 class="text-base font-bold text-white">已识别试卷库 & Stats</h2>
+                                <span class="text-xs text-slate-400">总处理试卷: 1,280 份</span>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-4">
+                                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center space-x-3">
+                                    <div class="p-3 bg-brand-600/20 text-brand-400 rounded-lg"><i data-lucide="file-check" class="w-6 h-6"></i></div>
+                                    <div>
+                                        <p class="text-xs text-slate-400">已处理文件</p>
+                                        <p class="text-lg font-bold text-white">1,280 份</p>
+                                    </div>
+                                </div>
+                                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center space-x-3">
+                                    <div class="p-3 bg-emerald-600/20 text-emerald-400 rounded-lg"><i data-lucide="zap" class="w-6 h-6"></i></div>
+                                    <div>
+                                        <p class="text-xs text-slate-400">识别准确率</p>
+                                        <p class="text-lg font-bold text-white">99.4%</p>
+                                    </div>
+                                </div>
+                                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center space-x-3">
+                                    <div class="p-3 bg-purple-600/20 text-purple-400 rounded-lg"><i data-lucide="clock" class="w-6 h-6"></i></div>
+                                    <div>
+                                        <p class="text-xs text-slate-400">累计节省时间</p>
+                                        <p class="text-lg font-bold text-white">340 小时</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                                <h3 class="text-xs font-bold text-slate-300 mb-3">最近历史试卷</h3>
+                                <div class="space-y-2 text-xs">
+                                    <div class="p-2.5 bg-slate-950 rounded border border-slate-800 flex justify-between">
+                                        <span class="text-slate-200">旧题试卷_2023_10.docx</span>
+                                        <span class="text-slate-500">2023-10-28</span>
+                                    </div>
+                                    <div class="p-2.5 bg-slate-950 rounded border border-slate-800 flex justify-between">
+                                        <span class="text-slate-200">高三数学模拟考_A卷.pdf</span>
+                                        <span class="text-slate-500">2023-10-27</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </main>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ========================================================================= -->
+        <!-- VIEW 3: FIGMA 15-SCREEN OVERVIEW BOARD GRID -->
+        <!-- ========================================================================= -->
+        <div id="view-overview" class="w-full max-w-7xl hidden">
+            <div class="mb-4 text-center">
+                <h2 class="text-lg font-bold text-white">Figma Canvas 全景流 15 屏展示</h2>
+                <p class="text-xs text-slate-400">移动端 (01-09) & Web 仪表盘 (10-15)</p>
+            </div>
+
+            <!-- Mobile Row -->
+            <div class="mb-8">
+                <h3 class="text-xs font-bold text-brand-400 uppercase tracking-wider mb-3">Mobile App Flow (01 - 09)</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-3">
+                    <template id="thumb-template">
+                        <div class="bg-slate-900 border border-slate-800 rounded-xl p-2 cursor-pointer hover:border-brand-500 transition flex flex-col items-center">
+                            <span class="text-[10px] font-bold text-slate-400 mb-1"></span>
+                            <div class="w-full h-32 bg-slate-950 rounded overflow-hidden flex items-center justify-center text-[10px] text-slate-500">
+                                预览屏
+                            </div>
+                        </div>
+                    </template>
+                    <div id="overview-mobile-grid" class="col-span-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-3"></div>
+                </div>
+            </div>
+
+            <!-- Web Row -->
+            <div>
+                <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-3">Web Dashboard Flow (10 - 15)</h3>
+                <div id="overview-web-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- JS Logic -->
+    <script>
+        // State variables
+        let currentView = 'mobile'; // 'mobile' | 'web' | 'overview'
+        let currentMobileStep = 1;
+        let currentWebStep = 10;
+
+        const mobileSteps = [
+            { id: 1, title: '01 Start' },
+            { id: 2, title: '02 Home' },
+            { id: 3, title: '03 Camera' },
+            { id: 4, title: '04 Bounding' },
+            { id: 5, title: '05 Processing' },
+            { id: 6, title: '06 OCR Result' },
+            { id: 7, title: '07 Detail' },
+            { id: 8, title: '08 Export' },
+            { id: 9, title: '09 Share' },
+        ];
+
+        const webSteps = [
+            { id: 10, title: '10 Web Dashboard' },
+            { id: 11, title: '11 Batch Uploading' },
+            { id: 12, title: '12 Split View Editor' },
+            { id: 13, title: '13 Batch OCR Panel' },
+            { id: 14, title: '14 Export & Save' },
+            { id: 15, title: '15 History & Stats' },
+        ];
+
+        // Initialize Icons & UI
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            renderSteppers();
+            renderOverviewGrids();
+            updateMobileUI();
+            updateWebUI();
+        });
+
+        // View Switcher
+        function switchMainView(mode) {
+            currentView = mode;
+            document.getElementById('view-mobile').classList.add('hidden');
+            document.getElementById('view-web').classList.add('hidden');
+            document.getElementById('view-overview').classList.add('hidden');
+
+            document.getElementById('btn-mobile-mode').className = 'px-4 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition-all flex items-center gap-2';
+            document.getElementById('btn-web-mode').className = 'px-4 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition-all flex items-center gap-2';
+            document.getElementById('btn-overview-mode').className = 'px-4 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition-all flex items-center gap-2';
+
+            if (mode === 'mobile') {
+                document.getElementById('view-mobile').classList.remove('hidden');
+                document.getElementById('btn-mobile-mode').className = 'px-4 py-1.5 rounded-lg font-medium transition-all flex items-center gap-2 bg-brand-600 text-white shadow-sm';
+            } else if (mode === 'web') {
+                document.getElementById('view-web').classList.remove('hidden');
+                document.getElementById('btn-web-mode').className = 'px-4 py-1.5 rounded-lg font-medium transition-all flex items-center gap-2 bg-brand-600 text-white shadow-sm';
+            } else {
+                document.getElementById('view-overview').classList.remove('hidden');
+                document.getElementById('btn-overview-mode').className = 'px-4 py-1.5 rounded-lg font-medium transition-all flex items-center gap-2 bg-brand-600 text-white shadow-sm';
+            }
+        }
+
+        // Render Stepper Buttons
+        function renderSteppers() {
+            // Mobile Stepper
+            const mContainer = document.getElementById('mobile-stepper-container');
+            mContainer.innerHTML = mobileSteps.map(step => `
+                <button onclick="navMobile(${step.id})" id="m-step-btn-${step.id}" class="px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1 text-slate-400 bg-slate-900 hover:bg-slate-800">
+                    <span>${step.title}</span>
+                </button>
+            `).join('');
+
+            // Web Stepper
+            const wContainer = document.getElementById('web-stepper-container');
+            wContainer.innerHTML = webSteps.map(step => `
+                <button onclick="navWeb(${step.id})" id="w-step-btn-${step.id}" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition text-slate-400 hover:bg-slate-800">
+                    <span>${step.title}</span>
+                </button>
+            `).join('');
+        }
+
+        // Mobile Navigation
+        function navMobile(stepId) {
+            currentMobileStep = stepId;
+            updateMobileUI();
+        }
+
+        function stepMobile(delta) {
+            let next = currentMobileStep + delta;
+            if (next < 1) next = 1;
+            if (next > 9) next = 9;
+            navMobile(next);
+        }
+
+        function updateMobileUI() {
+            // Hide all mobile screens
+            for (let i = 1; i <= 9; i++) {
+                const el = document.getElementById(`m-screen-${i}`);
+                if (el) el.classList.add('hidden');
+
+                const btn = document.getElementById(`m-step-btn-${i}`);
+                if (btn) {
+                    btn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold transition text-slate-400 bg-slate-900 border border-slate-800 hover:bg-slate-800';
+                }
+            }
+
+            // Show active screen
+            const activeEl = document.getElementById(`m-screen-${currentMobileStep}`);
+            if (activeEl) activeEl.classList.remove('hidden');
+
+            const activeBtn = document.getElementById(`m-step-btn-${currentMobileStep}`);
+            if (activeBtn) {
+                activeBtn.className = 'px-2.5 py-1 rounded-lg text-xs font-bold transition text-white bg-brand-600 shadow';
+            }
+
+            document.getElementById('mobile-step-indicator').innerText = `Screen 0${currentMobileStep} / 09`;
+        }
+
+        // Web Navigation
+        function navWeb(stepId) {
+            currentWebStep = stepId;
+            updateWebUI();
+        }
+
+        function updateWebUI() {
+            for (let i = 10; i <= 15; i++) {
+                const el = document.getElementById(`w-screen-${i}`);
+                if (el) el.classList.add('hidden');
+
+                const btn = document.getElementById(`w-step-btn-${i}`);
+                if (btn) {
+                    btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition text-slate-400 hover:bg-slate-800';
+                }
+
+                const sidebarNav = document.getElementById(`web-nav-${i}`);
+                if (sidebarNav) {
+                    sidebarNav.className = 'flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200';
+                }
+            }
+
+            const activeEl = document.getElementById(`w-screen-${currentWebStep}`);
+            if (activeEl) activeEl.classList.remove('hidden');
+
+            const activeBtn = document.getElementById(`w-step-btn-${currentWebStep}`);
+            if (activeBtn) {
+                activeBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition text-white bg-brand-600 shadow';
+            }
+
+            const activeSidebar = document.getElementById(`web-nav-${currentWebStep}`);
+            if (activeSidebar) {
+                activeSidebar.className = 'flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-brand-600 text-white font-semibold';
+            }
+
+            const stepObj = webSteps.find(s => s.id === currentWebStep);
+            if (stepObj) {
+                document.getElementById('web-screen-title').innerText = stepObj.title;
+            }
+        }
+
+        // Render Overview Figma Grid
+        function renderOverviewGrids() {
+            const mGrid = document.getElementById('overview-mobile-grid');
+            mGrid.innerHTML = mobileSteps.map(step => `
+                <div onclick="switchMainView('mobile'); navMobile(${step.id});" class="bg-slate-900 border border-slate-800 hover:border-brand-500 rounded-xl p-2.5 cursor-pointer transition flex flex-col items-center text-center group">
+                    <span class="text-[11px] font-bold text-slate-300 group-hover:text-brand-400 mb-2">${step.title}</span>
+                    <div class="w-full h-36 bg-slate-950 rounded-lg border border-slate-800 flex flex-col items-center justify-center p-2">
+                        <i data-lucide="smartphone" class="w-6 h-6 text-brand-500 mb-1 opacity-70"></i>
+                        <span class="text-[9px] text-slate-500">点击进入此屏</span>
+                    </div>
+                </div>
+            `).join('');
+
+            const wGrid = document.getElementById('overview-web-grid');
+            wGrid.innerHTML = webSteps.map(step => `
+                <div onclick="switchMainView('web'); navWeb(${step.id});" class="bg-slate-900 border border-slate-800 hover:border-brand-500 rounded-xl p-3 cursor-pointer transition flex flex-col items-center text-center group">
+                    <span class="text-xs font-bold text-slate-300 group-hover:text-brand-400 mb-2">${step.title}</span>
+                    <div class="w-full h-32 bg-slate-950 rounded-lg border border-slate-800 flex flex-col items-center justify-center p-2">
+                        <i data-lucide="monitor" class="w-6 h-6 text-emerald-500 mb-1 opacity-70"></i>
+                        <span class="text-[9px] text-slate-500">点击进入此屏</span>
+                    </div>
+                </div>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        // Reset Flows
+        function resetFlows() {
+            navMobile(1);
+            navWeb(10);
+            switchMainView('mobile');
+        }
+    </script>
+</body>
+</html>

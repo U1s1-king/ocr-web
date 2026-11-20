@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "unit": "canvas",
+  "canvas": {
+    "width": 600,
+    "height": 424.29
+  },
+  "markers": [
+    {
+      "id": "top-left",
+      "x": 7.14,
+      "y": 7.14,
+      "size": 8.57
+    },
+    {
+      "id": "top-right",
+      "x": 584.29,
+      "y": 7.14,
+      "size": 8.57
+    },
+    {
+      "id": "bottom-left",
+      "x": 7.14,
+      "y": 408.57,
+      "size": 8.57
+    },
+    {
+      "id": "bottom-right",
+      "x": 584.29,
+      "y": 408.57,
+      "size": 8.57
+    }
+  ],
+  "blocks": [
+    {
+      "id": "b1",
+      "type": "text",
+      "region": {
+        "x": 20,
+        "y": 401.43,
+        "width": 560,
+        "height": 7.14
+      },
+      "text": "超出矩形边框限定区域的答案无效",
+      "style": {
+        "fontSize": 2.5,
+        "fontWeight": "normal",
+        "textAlign": "center",
+        "lineHeight": 1.2
+      }
+    },
+    {
+      "id": "b2",
+      "type": "text",
+      "region": {
+        "x": 20,
+        "y": 18.57,
+        "width": 477.14,
+        "height": 10
+      },
+      "text": "考试名称（可编辑）",
+      "style": {
+        "fontSize": 4.6,
+        "fontWeight": "bold",
+        "textAlign": "center",
+        "lineHeight": 1.1
+      }
+    },
+    {
+      "id": "b3",
+      "type": "text",
+      "region": {
+        "x": 20,
+        "y": 28.86,
+        "width": 477.14,
+        "height": 14.29
+      },
+      "text": "通 用 答 题 卡",
+      "style": {
+        "fontSize": 7.2,
+        "fontWeight": "bold",
+        "textAlign": "center",
+        "lineHeight": 1.1
+      }
+    },
+    {
+      "id": "b4",
+      "type": "text",
+      "region": {
+        "x": 20,
+        "y": 43.71,
+        "width": 477.14,
+        "height": 10.29
+      },
+      "text": "姓名：　　　　  准考证号：　　　　  班级：　　　　  座位号：　　　　",
+      "style": {
+        "fontSize": 3.9,
+        "fontWeight": "normal",
+        "textAlign": "left",
+        "lineHeight": 1.3
+      }
+    },
+    {
+      "id": "b5",
+      "type": "text",
+      "region": {
+        "x": 20,
+        "y": 54.71,
+        "width": 477.14,
+        "height": 25.71
+      },
+      "text": "1. 本卡为空白模板，可在「精调」里添加选择题与主观题。\n2. 选择题用 2B 铅笔填涂；主观题用 0.5mm 黑色签字笔作答。\n3. 答题前请先核对定位块是否完整印刷。",
+      "style": {
+        "fontSize": 2.75,
+        "fontWeight": "normal",
+        "textAlign": "left",
+        "lineHeight": 1.55
+      }
+    },
+    {
+      "id": "b6",
+      "type": "text",
+      "region": {
+        "x": 20,
+        "y": 81.14,
+        "width": 477.14,
+        "height": 7.14
+      },
+      "text": "正确填涂：■　　错误填涂：√　×　○　　缺考标记：□",
+      "style": {
+        "fontSize": 2.9,
+        "fontWeight": "normal",
+        "textAlign": "left",
+        "lineHeight": 1.2
+      }
+    },
+    {
+      "id": "b7",
+      "type": "text",
+      "region": {
+        "x": 502.86,
+        "y": 18.57,
+        "width": 77.14,
+        "height": 37.14
+      },
+      "text": "贴条形码区",
+      "style": {
+        "fontSize": 2.9,
+        "fontWeight": "normal",
+        "textAlign": "center",
+        "lineHeight": 1.3
+      }
+    },
+    {
+      "id": "b8",
+      "type": "text",
+      "region": {
+        "x": 20,
+        "y": 93.29,
+        "width": 560,
+        "height": 8
+      },
+      "text": "一、答题区",
+      "style": {
+        "fontSize": 3.9,
+        "fontWeight": "bold",
+        "textAlign": "left",
+        "lineHeight": 1.1
+      }
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "displayNumber": 1,
+      "type": "subjective",
+      "score": 10,
+      "region": {
+        "x": 20,
+        "y": 102.71,
+        "width": 560,
+        "height": 295.86
+      }
+    }
+  ],
+  "answerKey": {}
+}

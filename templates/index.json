@@ -1,0 +1,983 @@
+[
+  {
+    "id": "普高-chinese-A3-standard",
+    "name": "普高-语文-A3-标准版",
+    "system": "普高",
+    "subject": "语文",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 150,
+    "questions": 19,
+    "objective": 10,
+    "subjective": 9,
+    "warnings": [],
+    "files": {
+      "paper": "papers/普高-语文-A3-标准版__普高-chinese-A3-standard.paper.json",
+      "design": "designs/普高-语文-A3-标准版__普高-chinese-A3-standard.design.json"
+    }
+  },
+  {
+    "id": "普高-chinese-A4-compact",
+    "name": "普高-语文-A4-紧凑版",
+    "system": "普高",
+    "subject": "语文",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 150,
+    "questions": 19,
+    "objective": 10,
+    "subjective": 9,
+    "warnings": [
+      "按 A4 排版空间不足，已自动改用 A3 横版"
+    ],
+    "files": {
+      "paper": "papers/普高-语文-A4-紧凑版__普高-chinese-A4-compact.paper.json",
+      "design": "designs/普高-语文-A4-紧凑版__普高-chinese-A4-compact.design.json"
+    }
+  },
+  {
+    "id": "普高-math-A3-standard",
+    "name": "普高-数学-A3-标准版",
+    "system": "普高",
+    "subject": "数学",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 150,
+    "questions": 21,
+    "objective": 12,
+    "subjective": 9,
+    "warnings": [],
+    "files": {
+      "paper": "papers/普高-数学-A3-标准版__普高-math-A3-standard.paper.json",
+      "design": "designs/普高-数学-A3-标准版__普高-math-A3-standard.design.json"
+    }
+  },
+  {
+    "id": "普高-math-A4-compact",
+    "name": "普高-数学-A4-紧凑版",
+    "system": "普高",
+    "subject": "数学",
+    "paperSize": "A4",
+    "orientation": "portrait",
+    "fullScore": 150,
+    "questions": 21,
+    "objective": 12,
+    "subjective": 9,
+    "warnings": [
+      "按A4 单栏排不下，已自动改为A4 双栏",
+      "题量偏多，已自动压缩主观题行距以放进一张卡"
+    ],
+    "files": {
+      "paper": "papers/普高-数学-A4-紧凑版__普高-math-A4-compact.paper.json",
+      "design": "designs/普高-数学-A4-紧凑版__普高-math-A4-compact.design.json"
+    }
+  },
+  {
+    "id": "普高-english-A4-standard",
+    "name": "普高-英语-A4-标准版",
+    "system": "普高",
+    "subject": "英语",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 150,
+    "questions": 67,
+    "objective": 55,
+    "subjective": 12,
+    "warnings": [
+      "按 A4 排版空间不足，已自动改用 A3 横版",
+      "题量偏多，已自动压缩主观题行距以放进一张卡"
+    ],
+    "files": {
+      "paper": "papers/普高-英语-A4-标准版__普高-english-A4-standard.paper.json",
+      "design": "designs/普高-英语-A4-标准版__普高-english-A4-standard.design.json"
+    }
+  },
+  {
+    "id": "普高-english-A3-loose",
+    "name": "普高-英语-A3-宽松版",
+    "system": "普高",
+    "subject": "英语",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 150,
+    "questions": 67,
+    "objective": 55,
+    "subjective": 12,
+    "warnings": [
+      "题量偏多，已自动压缩主观题行距以放进一张卡"
+    ],
+    "files": {
+      "paper": "papers/普高-英语-A3-宽松版__普高-english-A3-loose.paper.json",
+      "design": "designs/普高-英语-A3-宽松版__普高-english-A3-loose.design.json"
+    }
+  },
+  {
+    "id": "普高-physics-A3-standard",
+    "name": "普高-物理-A3-标准版",
+    "system": "普高",
+    "subject": "物理",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 100,
+    "questions": 15,
+    "objective": 10,
+    "subjective": 5,
+    "warnings": [],
+    "files": {
+      "paper": "papers/普高-物理-A3-标准版__普高-physics-A3-standard.paper.json",
+      "design": "designs/普高-物理-A3-标准版__普高-physics-A3-standard.design.json"
+    }
+  },
+  {
+    "id": "普高-physics-A4-compact",
+    "name": "普高-物理-A4-紧凑版",
+    "system": "普高",
+    "subject": "物理",
+    "paperSize": "A4",
+    "orientation": "portrait",
+    "fullScore": 100,
+    "questions": 15,
+    "objective": 10,
+    "subjective": 5,
+    "warnings": [
+      "按A4 单栏排不下，已自动改为A4 双栏",
+      "题量偏多，已自动压缩主观题行距以放进一张卡"
+    ],
+    "files": {
+      "paper": "papers/普高-物理-A4-紧凑版__普高-physics-A4-compact.paper.json",
+      "design": "designs/普高-物理-A4-紧凑版__普高-physics-A4-compact.design.json"
+    }
+  },
+  {
+    "id": "普高-chemistry-A4-standard",
+    "name": "普高-化学-A4-标准版",
+    "system": "普高",
+    "subject": "化学",
+    "paperSize": "A4",
+    "orientation": "portrait",
+    "fullScore": 100,
+    "questions": 18,
+    "objective": 14,
+    "subjective": 4,
+    "warnings": [
+      "按A4 单栏排不下，已自动改为A4 双栏"
+    ],
+    "files": {
+      "paper": "papers/普高-化学-A4-标准版__普高-chemistry-A4-standard.paper.json",
+      "design": "designs/普高-化学-A4-标准版__普高-chemistry-A4-standard.design.json"
+    }
+  },
+  {
+    "id": "普高-chemistry-A3-loose",
+    "name": "普高-化学-A3-宽松版",
+    "system": "普高",
+    "subject": "化学",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 100,
+    "questions": 18,
+    "objective": 14,
+    "subjective": 4,
+    "warnings": [],
+    "files": {
+      "paper": "papers/普高-化学-A3-宽松版__普高-chemistry-A3-loose.paper.json",
+      "design": "designs/普高-化学-A3-宽松版__普高-chemistry-A3-loose.design.json"
+    }
+  },
+  {
+    "id": "普高-biology-A4-standard",
+    "name": "普高-生物-A4-标准版",
+    "system": "普高",
+    "subject": "生物",
+    "paperSize": "A4",
+    "orientation": "portrait",
+    "fullScore": 100,
+    "questions": 25,
+    "objective": 20,
+    "subjective": 5,
+    "warnings": [
+      "按A4 单栏排不下，已自动改为A4 双栏"
+    ],
+    "files": {
+      "paper": "papers/普高-生物-A4-标准版__普高-biology-A4-standard.paper.json",
+      "design": "designs/普高-生物-A4-标准版__普高-biology-A4-standard.design.json"
+    }
+  },
+  {
+    "id": "普高-biology-A3-loose",
+    "name": "普高-生物-A3-宽松版",
+    "system": "普高",
+    "subject": "生物",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 100,
+    "questions": 25,
+    "objective": 20,
+    "subjective": 5,
+    "warnings": [],
+    "files": {
+      "paper": "papers/普高-生物-A3-宽松版__普高-biology-A3-loose.paper.json",
+      "design": "designs/普高-生物-A3-宽松版__普高-biology-A3-loose.design.json"
+    }
+  },
+  {
+    "id": "普高-politics-A3-standard",
+    "name": "普高-政治-A3-标准版",
+    "system": "普高",
+    "subject": "政治",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 100,
+    "questions": 20,
+    "objective": 16,
+    "subjective": 4,
+    "warnings": [],
+    "files": {
+      "paper": "papers/普高-政治-A3-标准版__普高-politics-A3-standard.paper.json",
+      "design": "designs/普高-政治-A3-标准版__普高-politics-A3-standard.design.json"
+    }
+  },
+  {
+    "id": "普高-politics-A4-compact",
+    "name": "普高-政治-A4-紧凑版",
+    "system": "普高",
+    "subject": "政治",
+    "paperSize": "A4",
+    "orientation": "portrait",
+    "fullScore": 100,
+    "questions": 20,
+    "objective": 16,
+    "subjective": 4,
+    "warnings": [
+      "按A4 单栏排不下，已自动改为A4 双栏"
+    ],
+    "files": {
+      "paper": "papers/普高-政治-A4-紧凑版__普高-politics-A4-compact.paper.json",
+      "design": "designs/普高-政治-A4-紧凑版__普高-politics-A4-compact.design.json"
+    }
+  },
+  {
+    "id": "普高-history-A3-standard",
+    "name": "普高-历史-A3-标准版",
+    "system": "普高",
+    "subject": "历史",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 100,
+    "questions": 20,
+    "objective": 16,
+    "subjective": 4,
+    "warnings": [],
+    "files": {
+      "paper": "papers/普高-历史-A3-标准版__普高-history-A3-standard.paper.json",
+      "design": "designs/普高-历史-A3-标准版__普高-history-A3-standard.design.json"
+    }
+  },
+  {
+    "id": "普高-history-A4-compact",
+    "name": "普高-历史-A4-紧凑版",
+    "system": "普高",
+    "subject": "历史",
+    "paperSize": "A4",
+    "orientation": "portrait",
+    "fullScore": 100,
+    "questions": 20,
+    "objective": 16,
+    "subjective": 4,
+    "warnings": [
+      "按A4 单栏排不下，已自动改为A4 双栏"
+    ],
+    "files": {
+      "paper": "papers/普高-历史-A4-紧凑版__普高-history-A4-compact.paper.json",
+      "design": "designs/普高-历史-A4-紧凑版__普高-history-A4-compact.design.json"
+    }
+  },
+  {
+    "id": "普高-geography-A4-standard",
+    "name": "普高-地理-A4-标准版",
+    "system": "普高",
+    "subject": "地理",
+    "paperSize": "A4",
+    "orientation": "portrait",
+    "fullScore": 100,
+    "questions": 19,
+    "objective": 16,
+    "subjective": 3,
+    "warnings": [
+      "题量偏多，已自动压缩主观题行距以放进一张卡"
+    ],
+    "files": {
+      "paper": "papers/普高-地理-A4-标准版__普高-geography-A4-standard.paper.json",
+      "design": "designs/普高-地理-A4-标准版__普高-geography-A4-standard.design.json"
+    }
+  },
+  {
+    "id": "普高-geography-A3-loose",
+    "name": "普高-地理-A3-宽松版",
+    "system": "普高",
+    "subject": "地理",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 100,
+    "questions": 19,
+    "objective": 16,
+    "subjective": 3,
+    "warnings": [],
+    "files": {
+      "paper": "papers/普高-地理-A3-宽松版__普高-geography-A3-loose.paper.json",
+      "design": "designs/普高-地理-A3-宽松版__普高-geography-A3-loose.design.json"
+    }
+  },
+  {
+    "id": "职教-v-chinese-A3-standard",
+    "name": "职教-语文-A3-标准版",
+    "system": "职教",
+    "subject": "语文",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 120,
+    "questions": 16,
+    "objective": 12,
+    "subjective": 4,
+    "warnings": [],
+    "files": {
+      "paper": "papers/职教-语文-A3-标准版__职教-v-chinese-A3-standard.paper.json",
+      "design": "designs/职教-语文-A3-标准版__职教-v-chinese-A3-standard.design.json"
+    }
+  },
+  {
+    "id": "职教-v-chinese-A4-compact",
+    "name": "职教-语文-A4-紧凑版",
+    "system": "职教",
+    "subject": "语文",
+    "paperSize": "A4",
+    "orientation": "portrait",
+    "fullScore": 120,
+    "questions": 16,
+    "objective": 12,
+    "subjective": 4,
+    "warnings": [
+      "题量偏多，已自动压缩主观题行距以放进一张卡"
+    ],
+    "files": {
+      "paper": "papers/职教-语文-A4-紧凑版__职教-v-chinese-A4-compact.paper.json",
+      "design": "designs/职教-语文-A4-紧凑版__职教-v-chinese-A4-compact.design.json"
+    }
+  },
+  {
+    "id": "职教-v-math-A3-standard",
+    "name": "职教-数学-A3-标准版",
+    "system": "职教",
+    "subject": "数学",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 120,
+    "questions": 20,
+    "objective": 12,
+    "subjective": 8,
+    "warnings": [],
+    "files": {
+      "paper": "papers/职教-数学-A3-标准版__职教-v-math-A3-standard.paper.json",
+      "design": "designs/职教-数学-A3-标准版__职教-v-math-A3-standard.design.json"
+    }
+  },
+  {
+    "id": "职教-v-math-A4-compact",
+    "name": "职教-数学-A4-紧凑版",
+    "system": "职教",
+    "subject": "数学",
+    "paperSize": "A4",
+    "orientation": "portrait",
+    "fullScore": 120,
+    "questions": 20,
+    "objective": 12,
+    "subjective": 8,
+    "warnings": [
+      "按A4 单栏排不下，已自动改为A4 双栏",
+      "题量偏多，已自动压缩主观题行距以放进一张卡"
+    ],
+    "files": {
+      "paper": "papers/职教-数学-A4-紧凑版__职教-v-math-A4-compact.paper.json",
+      "design": "designs/职教-数学-A4-紧凑版__职教-v-math-A4-compact.design.json"
+    }
+  },
+  {
+    "id": "职教-v-english-A4-standard",
+    "name": "职教-英语-A4-标准版",
+    "system": "职教",
+    "subject": "英语",
+    "paperSize": "A4",
+    "orientation": "portrait",
+    "fullScore": 100,
+    "questions": 36,
+    "objective": 30,
+    "subjective": 6,
+    "warnings": [
+      "题量偏多，已自动压缩主观题行距以放进一张卡"
+    ],
+    "files": {
+      "paper": "papers/职教-英语-A4-标准版__职教-v-english-A4-standard.paper.json",
+      "design": "designs/职教-英语-A4-标准版__职教-v-english-A4-standard.design.json"
+    }
+  },
+  {
+    "id": "职教-v-english-A3-loose",
+    "name": "职教-英语-A3-宽松版",
+    "system": "职教",
+    "subject": "英语",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 100,
+    "questions": 36,
+    "objective": 30,
+    "subjective": 6,
+    "warnings": [],
+    "files": {
+      "paper": "papers/职教-英语-A3-宽松版__职教-v-english-A3-loose.paper.json",
+      "design": "designs/职教-英语-A3-宽松版__职教-v-english-A3-loose.design.json"
+    }
+  },
+  {
+    "id": "职教-v-major-A3-standard",
+    "name": "职教-专业综合（机械类）-A3-标准版",
+    "system": "职教",
+    "subject": "专业综合（机械类）",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 200,
+    "questions": 34,
+    "objective": 20,
+    "subjective": 14,
+    "warnings": [],
+    "files": {
+      "paper": "papers/职教-专业综合-A3-标准版__职教-v-major-A3-standard.paper.json",
+      "design": "designs/职教-专业综合-A3-标准版__职教-v-major-A3-standard.design.json"
+    }
+  },
+  {
+    "id": "职教-v-major-A4-compact",
+    "name": "职教-专业综合（机械类）-A4-紧凑版",
+    "system": "职教",
+    "subject": "专业综合（机械类）",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 200,
+    "questions": 34,
+    "objective": 20,
+    "subjective": 14,
+    "warnings": [
+      "按 A4 排版空间不足，已自动改用 A3 横版"
+    ],
+    "files": {
+      "paper": "papers/职教-专业综合-A4-紧凑版__职教-v-major-A4-compact.paper.json",
+      "design": "designs/职教-专业综合-A4-紧凑版__职教-v-major-A4-compact.design.json"
+    }
+  },
+  {
+    "id": "职教-v-elec-A3-standard",
+    "name": "职教-专业综合（电工电子类）-A3-标准版",
+    "system": "职教",
+    "subject": "专业综合（电工电子类）",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 200,
+    "questions": 34,
+    "objective": 20,
+    "subjective": 14,
+    "warnings": [],
+    "files": {
+      "paper": "papers/职教-专业综合-A3-标准版__职教-v-elec-A3-standard.paper.json",
+      "design": "designs/职教-专业综合-A3-标准版__职教-v-elec-A3-standard.design.json"
+    }
+  },
+  {
+    "id": "职教-v-elec-A4-compact",
+    "name": "职教-专业综合（电工电子类）-A4-紧凑版",
+    "system": "职教",
+    "subject": "专业综合（电工电子类）",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 200,
+    "questions": 34,
+    "objective": 20,
+    "subjective": 14,
+    "warnings": [
+      "按 A4 排版空间不足，已自动改用 A3 横版"
+    ],
+    "files": {
+      "paper": "papers/职教-专业综合-A4-紧凑版__职教-v-elec-A4-compact.paper.json",
+      "design": "designs/职教-专业综合-A4-紧凑版__职教-v-elec-A4-compact.design.json"
+    }
+  },
+  {
+    "id": "职教-v-cs-A3-standard",
+    "name": "职教-专业综合（计算机类）-A3-标准版",
+    "system": "职教",
+    "subject": "专业综合（计算机类）",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 200,
+    "questions": 34,
+    "objective": 20,
+    "subjective": 14,
+    "warnings": [],
+    "files": {
+      "paper": "papers/职教-专业综合-A3-标准版__职教-v-cs-A3-standard.paper.json",
+      "design": "designs/职教-专业综合-A3-标准版__职教-v-cs-A3-standard.design.json"
+    }
+  },
+  {
+    "id": "职教-v-cs-A4-compact",
+    "name": "职教-专业综合（计算机类）-A4-紧凑版",
+    "system": "职教",
+    "subject": "专业综合（计算机类）",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 200,
+    "questions": 34,
+    "objective": 20,
+    "subjective": 14,
+    "warnings": [
+      "按 A4 排版空间不足，已自动改用 A3 横版"
+    ],
+    "files": {
+      "paper": "papers/职教-专业综合-A4-紧凑版__职教-v-cs-A4-compact.paper.json",
+      "design": "designs/职教-专业综合-A4-紧凑版__职教-v-cs-A4-compact.design.json"
+    }
+  },
+  {
+    "id": "职教-v-nurse-A3-standard",
+    "name": "职教-专业综合（护理类）-A3-标准版",
+    "system": "职教",
+    "subject": "专业综合（护理类）",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 200,
+    "questions": 34,
+    "objective": 20,
+    "subjective": 14,
+    "warnings": [],
+    "files": {
+      "paper": "papers/职教-专业综合-A3-标准版__职教-v-nurse-A3-standard.paper.json",
+      "design": "designs/职教-专业综合-A3-标准版__职教-v-nurse-A3-standard.design.json"
+    }
+  },
+  {
+    "id": "职教-v-nurse-A4-compact",
+    "name": "职教-专业综合（护理类）-A4-紧凑版",
+    "system": "职教",
+    "subject": "专业综合（护理类）",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 200,
+    "questions": 34,
+    "objective": 20,
+    "subjective": 14,
+    "warnings": [
+      "按 A4 排版空间不足，已自动改用 A3 横版"
+    ],
+    "files": {
+      "paper": "papers/职教-专业综合-A4-紧凑版__职教-v-nurse-A4-compact.paper.json",
+      "design": "designs/职教-专业综合-A4-紧凑版__职教-v-nurse-A4-compact.design.json"
+    }
+  },
+  {
+    "id": "职教-v-fin-A3-standard",
+    "name": "职教-专业综合（财经类）-A3-标准版",
+    "system": "职教",
+    "subject": "专业综合（财经类）",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 200,
+    "questions": 34,
+    "objective": 20,
+    "subjective": 14,
+    "warnings": [],
+    "files": {
+      "paper": "papers/职教-专业综合-A3-标准版__职教-v-fin-A3-standard.paper.json",
+      "design": "designs/职教-专业综合-A3-标准版__职教-v-fin-A3-standard.design.json"
+    }
+  },
+  {
+    "id": "职教-v-fin-A4-compact",
+    "name": "职教-专业综合（财经类）-A4-紧凑版",
+    "system": "职教",
+    "subject": "专业综合（财经类）",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 200,
+    "questions": 34,
+    "objective": 20,
+    "subjective": 14,
+    "warnings": [
+      "按 A4 排版空间不足，已自动改用 A3 横版"
+    ],
+    "files": {
+      "paper": "papers/职教-专业综合-A4-紧凑版__职教-v-fin-A4-compact.paper.json",
+      "design": "designs/职教-专业综合-A4-紧凑版__职教-v-fin-A4-compact.design.json"
+    }
+  },
+  {
+    "id": "中考-chinese-A3-standard",
+    "name": "中考-语文-A3-标准版",
+    "system": "中考",
+    "subject": "语文",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 150,
+    "questions": 17,
+    "objective": 8,
+    "subjective": 9,
+    "warnings": [],
+    "files": {
+      "paper": "papers/中考-语文-A3-标准版__中考-chinese-A3-standard.paper.json",
+      "design": "designs/中考-语文-A3-标准版__中考-chinese-A3-standard.design.json"
+    }
+  },
+  {
+    "id": "中考-chinese-A4-compact",
+    "name": "中考-语文-A4-紧凑版",
+    "system": "中考",
+    "subject": "语文",
+    "paperSize": "A4",
+    "orientation": "portrait",
+    "fullScore": 150,
+    "questions": 17,
+    "objective": 8,
+    "subjective": 9,
+    "warnings": [
+      "按A4 单栏排不下，已自动改为A4 双栏",
+      "题量偏多，已自动压缩主观题行距以放进一张卡"
+    ],
+    "files": {
+      "paper": "papers/中考-语文-A4-紧凑版__中考-chinese-A4-compact.paper.json",
+      "design": "designs/中考-语文-A4-紧凑版__中考-chinese-A4-compact.design.json"
+    }
+  },
+  {
+    "id": "中考-math-A3-standard",
+    "name": "中考-数学-A3-标准版",
+    "system": "中考",
+    "subject": "数学",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 150,
+    "questions": 19,
+    "objective": 10,
+    "subjective": 9,
+    "warnings": [],
+    "files": {
+      "paper": "papers/中考-数学-A3-标准版__中考-math-A3-standard.paper.json",
+      "design": "designs/中考-数学-A3-标准版__中考-math-A3-standard.design.json"
+    }
+  },
+  {
+    "id": "中考-math-A4-compact",
+    "name": "中考-数学-A4-紧凑版",
+    "system": "中考",
+    "subject": "数学",
+    "paperSize": "A4",
+    "orientation": "portrait",
+    "fullScore": 150,
+    "questions": 19,
+    "objective": 10,
+    "subjective": 9,
+    "warnings": [
+      "按A4 单栏排不下，已自动改为A4 双栏",
+      "题量偏多，已自动压缩主观题行距以放进一张卡"
+    ],
+    "files": {
+      "paper": "papers/中考-数学-A4-紧凑版__中考-math-A4-compact.paper.json",
+      "design": "designs/中考-数学-A4-紧凑版__中考-math-A4-compact.design.json"
+    }
+  },
+  {
+    "id": "中考-english-A4-standard",
+    "name": "中考-英语-A4-标准版",
+    "system": "中考",
+    "subject": "英语",
+    "paperSize": "A4",
+    "orientation": "portrait",
+    "fullScore": 150,
+    "questions": 56,
+    "objective": 44,
+    "subjective": 12,
+    "warnings": [
+      "按A4 单栏排不下，已自动改为A4 双栏",
+      "题量偏多，已自动压缩主观题行距以放进一张卡"
+    ],
+    "files": {
+      "paper": "papers/中考-英语-A4-标准版__中考-english-A4-standard.paper.json",
+      "design": "designs/中考-英语-A4-标准版__中考-english-A4-standard.design.json"
+    }
+  },
+  {
+    "id": "中考-english-A3-loose",
+    "name": "中考-英语-A3-宽松版",
+    "system": "中考",
+    "subject": "英语",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 150,
+    "questions": 56,
+    "objective": 44,
+    "subjective": 12,
+    "warnings": [
+      "题量偏多，已自动压缩主观题行距以放进一张卡"
+    ],
+    "files": {
+      "paper": "papers/中考-英语-A3-宽松版__中考-english-A3-loose.paper.json",
+      "design": "designs/中考-英语-A3-宽松版__中考-english-A3-loose.design.json"
+    }
+  },
+  {
+    "id": "中考-physics-A3-standard",
+    "name": "中考-物理-A3-标准版",
+    "system": "中考",
+    "subject": "物理",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 100,
+    "questions": 13,
+    "objective": 8,
+    "subjective": 5,
+    "warnings": [],
+    "files": {
+      "paper": "papers/中考-物理-A3-标准版__中考-physics-A3-standard.paper.json",
+      "design": "designs/中考-物理-A3-标准版__中考-physics-A3-standard.design.json"
+    }
+  },
+  {
+    "id": "中考-physics-A4-compact",
+    "name": "中考-物理-A4-紧凑版",
+    "system": "中考",
+    "subject": "物理",
+    "paperSize": "A4",
+    "orientation": "portrait",
+    "fullScore": 100,
+    "questions": 13,
+    "objective": 8,
+    "subjective": 5,
+    "warnings": [
+      "按A4 单栏排不下，已自动改为A4 双栏"
+    ],
+    "files": {
+      "paper": "papers/中考-物理-A4-紧凑版__中考-physics-A4-compact.paper.json",
+      "design": "designs/中考-物理-A4-紧凑版__中考-physics-A4-compact.design.json"
+    }
+  },
+  {
+    "id": "中考-chemistry-A4-standard",
+    "name": "中考-化学-A4-标准版",
+    "system": "中考",
+    "subject": "化学",
+    "paperSize": "A4",
+    "orientation": "portrait",
+    "fullScore": 100,
+    "questions": 15,
+    "objective": 11,
+    "subjective": 4,
+    "warnings": [
+      "题量偏多，已自动压缩主观题行距以放进一张卡"
+    ],
+    "files": {
+      "paper": "papers/中考-化学-A4-标准版__中考-chemistry-A4-standard.paper.json",
+      "design": "designs/中考-化学-A4-标准版__中考-chemistry-A4-standard.design.json"
+    }
+  },
+  {
+    "id": "中考-chemistry-A3-loose",
+    "name": "中考-化学-A3-宽松版",
+    "system": "中考",
+    "subject": "化学",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 100,
+    "questions": 15,
+    "objective": 11,
+    "subjective": 4,
+    "warnings": [],
+    "files": {
+      "paper": "papers/中考-化学-A3-宽松版__中考-chemistry-A3-loose.paper.json",
+      "design": "designs/中考-化学-A3-宽松版__中考-chemistry-A3-loose.design.json"
+    }
+  },
+  {
+    "id": "中考-biology-A4-standard",
+    "name": "中考-生物-A4-标准版",
+    "system": "中考",
+    "subject": "生物",
+    "paperSize": "A4",
+    "orientation": "portrait",
+    "fullScore": 100,
+    "questions": 21,
+    "objective": 16,
+    "subjective": 5,
+    "warnings": [
+      "按A4 单栏排不下，已自动改为A4 双栏"
+    ],
+    "files": {
+      "paper": "papers/中考-生物-A4-标准版__中考-biology-A4-standard.paper.json",
+      "design": "designs/中考-生物-A4-标准版__中考-biology-A4-standard.design.json"
+    }
+  },
+  {
+    "id": "中考-biology-A3-loose",
+    "name": "中考-生物-A3-宽松版",
+    "system": "中考",
+    "subject": "生物",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 100,
+    "questions": 21,
+    "objective": 16,
+    "subjective": 5,
+    "warnings": [],
+    "files": {
+      "paper": "papers/中考-生物-A3-宽松版__中考-biology-A3-loose.paper.json",
+      "design": "designs/中考-生物-A3-宽松版__中考-biology-A3-loose.design.json"
+    }
+  },
+  {
+    "id": "中考-politics-A3-standard",
+    "name": "中考-政治-A3-标准版",
+    "system": "中考",
+    "subject": "政治",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 100,
+    "questions": 17,
+    "objective": 13,
+    "subjective": 4,
+    "warnings": [],
+    "files": {
+      "paper": "papers/中考-政治-A3-标准版__中考-politics-A3-standard.paper.json",
+      "design": "designs/中考-政治-A3-标准版__中考-politics-A3-standard.design.json"
+    }
+  },
+  {
+    "id": "中考-politics-A4-compact",
+    "name": "中考-政治-A4-紧凑版",
+    "system": "中考",
+    "subject": "政治",
+    "paperSize": "A4",
+    "orientation": "portrait",
+    "fullScore": 100,
+    "questions": 17,
+    "objective": 13,
+    "subjective": 4,
+    "warnings": [
+      "题量偏多，已自动压缩主观题行距以放进一张卡"
+    ],
+    "files": {
+      "paper": "papers/中考-政治-A4-紧凑版__中考-politics-A4-compact.paper.json",
+      "design": "designs/中考-政治-A4-紧凑版__中考-politics-A4-compact.design.json"
+    }
+  },
+  {
+    "id": "中考-history-A3-standard",
+    "name": "中考-历史-A3-标准版",
+    "system": "中考",
+    "subject": "历史",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 100,
+    "questions": 17,
+    "objective": 13,
+    "subjective": 4,
+    "warnings": [],
+    "files": {
+      "paper": "papers/中考-历史-A3-标准版__中考-history-A3-standard.paper.json",
+      "design": "designs/中考-历史-A3-标准版__中考-history-A3-standard.design.json"
+    }
+  },
+  {
+    "id": "中考-history-A4-compact",
+    "name": "中考-历史-A4-紧凑版",
+    "system": "中考",
+    "subject": "历史",
+    "paperSize": "A4",
+    "orientation": "portrait",
+    "fullScore": 100,
+    "questions": 17,
+    "objective": 13,
+    "subjective": 4,
+    "warnings": [
+      "题量偏多，已自动压缩主观题行距以放进一张卡"
+    ],
+    "files": {
+      "paper": "papers/中考-历史-A4-紧凑版__中考-history-A4-compact.paper.json",
+      "design": "designs/中考-历史-A4-紧凑版__中考-history-A4-compact.design.json"
+    }
+  },
+  {
+    "id": "中考-geography-A4-standard",
+    "name": "中考-地理-A4-标准版",
+    "system": "中考",
+    "subject": "地理",
+    "paperSize": "A4",
+    "orientation": "portrait",
+    "fullScore": 100,
+    "questions": 16,
+    "objective": 13,
+    "subjective": 3,
+    "warnings": [
+      "题量偏多，已自动压缩主观题行距以放进一张卡"
+    ],
+    "files": {
+      "paper": "papers/中考-地理-A4-标准版__中考-geography-A4-standard.paper.json",
+      "design": "designs/中考-地理-A4-标准版__中考-geography-A4-standard.design.json"
+    }
+  },
+  {
+    "id": "中考-geography-A3-loose",
+    "name": "中考-地理-A3-宽松版",
+    "system": "中考",
+    "subject": "地理",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 100,
+    "questions": 16,
+    "objective": 13,
+    "subjective": 3,
+    "warnings": [],
+    "files": {
+      "paper": "papers/中考-地理-A3-宽松版__中考-geography-A3-loose.paper.json",
+      "design": "designs/中考-地理-A3-宽松版__中考-geography-A3-loose.design.json"
+    }
+  },
+  {
+    "id": "通用-generic-A4-blank",
+    "name": "通用-A4-空白答题卡",
+    "system": "通用",
+    "subject": "通用",
+    "paperSize": "A4",
+    "orientation": "portrait",
+    "fullScore": 100,
+    "questions": 1,
+    "objective": 0,
+    "subjective": 1,
+    "warnings": [],
+    "files": {
+      "paper": "papers/通用-A4-空白答题卡__通用-generic-A4-blank.paper.json",
+      "design": "designs/通用-A4-空白答题卡__通用-generic-A4-blank.design.json"
+    }
+  },
+  {
+    "id": "通用-generic-A3-blank",
+    "name": "通用-A3-空白答题卡",
+    "system": "通用",
+    "subject": "通用",
+    "paperSize": "A3",
+    "orientation": "landscape",
+    "fullScore": 100,
+    "questions": 1,
+    "objective": 0,
+    "subjective": 1,
+    "warnings": [],
+    "files": {
+      "paper": "papers/通用-A3-空白答题卡__通用-generic-A3-blank.paper.json",
+      "design": "designs/通用-A3-空白答题卡__通用-generic-A3-blank.design.json"
+    }
+  }
+]

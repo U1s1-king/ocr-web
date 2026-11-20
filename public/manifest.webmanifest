@@ -1,0 +1,23 @@
+{
+  "name": "鉴裁 · 答题卡识别",
+  "short_name": "鉴裁",
+  "description": "试卷 OCR 扫描与多端协同系统",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf4ec",
+  "theme_color": "#a0331e",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
