@@ -115,6 +115,9 @@ export default function BarcodeStudioPage() {
   const [importInfo, setImportInfo] = useState('')
   const [importError, setImportError] = useState('')
   const [printMode, setPrintMode] = useState<'roll' | 'sheet2'>('roll')
+  const [sourceTab, setSourceTab] = useState<'students' | 'external'>('students')
+  const [templateOpen, setTemplateOpen] = useState(false)
+  const [manualBarcode, setManualBarcode] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
   const drag = useRef<{ id: string; sx: number; sy: number; x: number; y: number } | null>(null)
 
@@ -139,7 +142,10 @@ export default function BarcodeStudioPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const previewPerson = useMemo(() => people[0] ?? DEFAULT_PERSON, [people])
+  const previewPerson = useMemo(() => {
+    const base = people[0] ?? DEFAULT_PERSON
+    return manualBarcode ? { ...base, candidateNumber: manualBarcode } : base
+  }, [people, manualBarcode])
   const filtered = useMemo(() => {
     const kw = q.trim().toLowerCase()
     if (!kw) return people
@@ -147,7 +153,9 @@ export default function BarcodeStudioPage() {
   }, [people, q])
 
   const selectedField = design.fields.find((f) => f.id === selected) ?? null
-  const printPeople = filtered
+  const printPeople = manualBarcode
+    ? [{ ...DEFAULT_PERSON, candidateNumber: manualBarcode, name: people[0]?.name ?? DEFAULT_PERSON.name }]
+    : filtered
   const sheet = useMemo(() => {
     const margin = 10
     const gap = 6
@@ -286,6 +294,8 @@ export default function BarcodeStudioPage() {
         const found = Object.entries(mapping).map(([f, h]) => `${FIELD_LABELS[f as keyof typeof FIELD_LABELS]}←${h}`)
         setPeople(next)
         setPeopleSource('import')
+        setSourceTab('external')
+        setTemplateOpen(false)
         setImportInfo(`已导入 ${next.length} 人 · 自动识别：${found.join('，')}`)
       })
       .catch((e) => setImportError(e instanceof Error ? e.message : '文件解析失败'))
@@ -396,20 +406,36 @@ export default function BarcodeStudioPage() {
                 {peopleSource === 'import' ? '外部导入' : '学生名单'}
               </Badge>
             </div>
-            <div className="mt-2 grid grid-cols-2 gap-1.5">
-              <input ref={fileRef} type="file" accept=".json,.csv,.txt" className="hidden" onChange={(e) => handleImport(e.target.files?.[0])} />
-              <Button size="sm" variant="ghost" onClick={() => void fileRef.current?.click()}>导入文件</Button>
-              <Button size="sm" variant="ghost" onClick={restoreStudents}>用学生名单</Button>
-              <Button size="sm" variant="ghost" onClick={() => download('答题卡条形码数据源.json', JSON.stringify([SAMPLE_ROW], null, 2), 'application/json;charset=utf-8')}>
-                JSON 模板
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => download('答题卡条形码数据源.csv', csvTemplate(), 'text/csv;charset=utf-8')}>
-                Excel/CSV 模板
-              </Button>
+            <input ref={fileRef} type="file" accept=".json,.csv,.txt" className="hidden" onChange={(e) => handleImport(e.target.files?.[0])} />
+            <div className="mt-2 grid grid-cols-2 gap-1 rounded-xl bg-brand-50 p-1">
+              <button
+                type="button"
+                className={`rounded-lg px-2 py-1.5 text-[10.5px] font-bold ${sourceTab === 'students' ? 'bg-white text-brand-700 shadow-sm' : 'text-ink-soft'}`}
+                onClick={() => { setSourceTab('students'); restoreStudents() }}
+              >
+                学生
+              </button>
+              <button
+                type="button"
+                className={`rounded-lg px-2 py-1.5 text-[10.5px] font-bold ${sourceTab === 'external' ? 'bg-white text-brand-700 shadow-sm' : 'text-ink-soft'}`}
+                onClick={() => setSourceTab('external')}
+              >
+                导入外部源
+              </button>
             </div>
-            <p className="mt-1.5 text-[9.5px] leading-relaxed text-ink-soft/55">
-              模板列：学校、姓名、座号、考场号、考号、班级；也支持自动识别常见列名。Excel 请先另存为 CSV。
-            </p>
+            {sourceTab === 'students' ? (
+              <p className="mt-1.5 text-[9.5px] leading-relaxed text-ink-soft/55">
+                直接读取学生名单里的姓名、考号、班级；座号和考场使用默认值。
+              </p>
+            ) : (
+              <div className="mt-1.5 rounded-xl border border-dashed border-brand-200 bg-brand-50/40 p-2">
+                <p className="text-[9.5px] leading-relaxed text-ink-soft/65">请下载模板，按模板填好后再导入；支持 CSV / JSON。</p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  <Button size="sm" variant="ghost" onClick={() => setTemplateOpen(true)}>下载模板</Button>
+                  <Button size="sm" variant="ghost" onClick={() => void fileRef.current?.click()}>选择文件导入</Button>
+                </div>
+              </div>
+            )}
             {importInfo && <p className="mt-1.5 text-[9.5px] leading-relaxed text-emerald-700">{importInfo}</p>}
             {importError && <p className="mt-1.5 rounded-lg bg-red-50 px-2 py-1.5 text-[9.5px] text-red-600">{importError}</p>}
 
@@ -447,6 +473,18 @@ export default function BarcodeStudioPage() {
                   <input type="checkbox" checked={design.showText} onChange={(e) => patchDesign({ showText: e.target.checked })} /> 条码文字
                 </label>
               </div>
+            </div>
+
+            <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl bg-brand-50/50 px-2.5 py-2">
+              <span className="text-[10px] font-bold text-ink-soft">手动条码数字</span>
+              <input
+                className={`${inputCls} !w-[180px]`}
+                inputMode="numeric"
+                value={manualBarcode}
+                onChange={(e) => setManualBarcode(e.target.value.replace(/\s/g, ''))}
+                placeholder="留空则用数据源考号"
+              />
+              <span className="text-[9.5px] text-ink-soft/50">可直接输入数字生成条码；清空后恢复学生/外部数据源</span>
             </div>
 
             <div className="mt-3 flex flex-col gap-3 lg:flex-row">
@@ -525,6 +563,49 @@ export default function BarcodeStudioPage() {
           </Card>
         </div>
       </div>
+
+      {templateOpen && (
+        <div className="account-mask" onClick={() => setTemplateOpen(false)} role="presentation">
+          <div className="account-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-[16px] font-black text-ink">请下载模板</h2>
+                <p className="mt-1 text-[10.5px] leading-relaxed text-ink-soft/65">
+                  请下载模板，按照模板填写学生信息后导入，系统会自动识别表头并生成条形码标签。
+                </p>
+              </div>
+              <button type="button" className="text-[12px] font-bold text-ink-soft" onClick={() => setTemplateOpen(false)}>关闭</button>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                className="rounded-xl border border-brand-200 bg-white px-3 py-3 text-left hover:bg-brand-50"
+                onClick={() => download('答题卡条形码数据源.csv', csvTemplate(), 'text/csv;charset=utf-8')}
+              >
+                <span className="block text-[12px] font-bold text-ink">Excel/CSV 模板</span>
+                <span className="mt-0.5 block text-[9.5px] text-ink-soft/55">下载后用 Excel 打开填写</span>
+              </button>
+              <button
+                type="button"
+                className="rounded-xl border border-brand-200 bg-white px-3 py-3 text-left hover:bg-brand-50"
+                onClick={() => download('答题卡条形码数据源.json', JSON.stringify([SAMPLE_ROW], null, 2), 'application/json;charset=utf-8')}
+              >
+                <span className="block text-[12px] font-bold text-ink">JSON 模板</span>
+                <span className="mt-0.5 block text-[9.5px] text-ink-soft/55">适合程序/脚本生成</span>
+              </button>
+            </div>
+            <p className="mt-3 rounded-lg bg-brand-50 px-2.5 py-2 text-[9.5px] leading-relaxed text-ink-soft/65">
+              模板列：学校、姓名、座号、考场号、考号、班级。Excel 请另存为 CSV 后导入。
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button type="button" className="serverdown-btn ghost !h-9" onClick={() => setTemplateOpen(false)}>取消</button>
+              <button type="button" className="serverdown-btn primary !h-9" onClick={() => { setTemplateOpen(false); void fileRef.current?.click() }}>
+                填写完成，导入
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @media print {

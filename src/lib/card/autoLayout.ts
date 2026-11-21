@@ -175,3 +175,17 @@ export function autoInsertGroup(
 
   return { front: incoming, back: existingBack, side: 'front', overflow: false }
 }
+
+
+/** 把正面超出纸张的后续内容整体顺排到背面（可重复执行） */
+export function paginateOverflow(front: CardDoc, existingBack: CardDoc | null): { front: CardDoc; back: CardDoc | null; side: 'front' | 'back'; overflow: boolean } {
+  const page = paperMm(front.meta.paperSize, front.meta.orientation)
+  const limit = page.h - BOTTOM_MARGIN
+  const all = boxes(front)
+  const overflow = all.filter((b) => b.y + b.h > limit)
+  if (!overflow.length) return { front, back: existingBack, side: 'front', overflow: false }
+  const minY = Math.min(...overflow.map((b) => b.y))
+  const moveIds = new Set(all.filter((b) => b.y >= minY - 0.1).map((b) => b.id))
+  const result = flowToBack(front, front, existingBack, moveIds)
+  return { ...result, side: 'front' }
+}

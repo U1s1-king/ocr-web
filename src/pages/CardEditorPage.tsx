@@ -14,7 +14,7 @@ import { addChoiceGroup, addPresetBlock, addSubjectiveGroup, groupOf, splitGroup
 import { BARCODE_FORMATS, validateBarcode } from '../lib/card/barcode'
 import { ANSWER_CARD_BARCODE_AREA } from '../lib/barcode/templates'
 import { backAsDoc, createBackDoc, withBack, type BackPreset } from '../lib/card/back'
-import { autoInsertGroup } from '../lib/card/autoLayout'
+import { autoInsertGroup, paginateOverflow } from '../lib/card/autoLayout'
 import {
   createPaperFromDoc,
   readLocalDoc,
@@ -265,12 +265,16 @@ export default function CardEditorPage() {
   function enableBack(preset: BackPreset) {
     if (!frontDoc) return
     pushHistory()
-    const back = createBackDoc(frontDoc, preset)
-    setBackDoc(back)
-    setSide('back')
+    const blank = createBackDoc(frontDoc, preset)
+    // 双面 = 同一张答题卡的两页：先把正面放不下的内容自动分到背面
+    const result = paginateOverflow(frontDoc, blank)
+    setFrontDoc(result.front)
+    setBackDoc(result.back)
+    setSide('front')
     setSel([])
     setPrimary(null)
     setDirty(true)
+    toast('已开启双面，超出正面的内容已自动分页', 'ok')
   }
 
   function disableBack() {
@@ -279,6 +283,19 @@ export default function CardEditorPage() {
     setSel([])
     setPrimary(null)
     setDirty(true)
+  }
+
+  function repage() {
+    if (!frontDoc) return
+    pushHistory()
+    const base = backDoc ?? createBackDoc(frontDoc, 'blank')
+    const result = paginateOverflow(frontDoc, base)
+    setFrontDoc(result.front)
+    setBackDoc(result.back)
+    setDirty(true)
+    setSel([])
+    setPrimary(null)
+    toast(result.overflow ? '内容超过两面，请减少题量或换 A3' : '已按内容重新分页', result.overflow ? 'err' : 'ok')
   }
 
 
@@ -969,22 +986,20 @@ export default function CardEditorPage() {
                 </button>
               )}
             </div>
-            <select
-              className="rounded-lg border border-brand-200 bg-white px-1.5 py-1 text-[10.5px] font-semibold text-ink-soft"
-              value=""
-              onChange={(e) => {
-                const v = e.target.value as BackPreset | 'off' | ''
-                if (!v) return
-                if (v === 'off') disableBack()
-                else enableBack(v)
-              }}
-            >
-              <option value="">双面设置…</option>
-              <option value="blank">开启双面（空白背面）</option>
-              <option value="essay">语文 · 背面作文</option>
-              <option value="math3">数学 · 背面三栏</option>
-              {backDoc && <option value="off">关闭双面</option>}
-            </select>
+            {!backDoc ? (
+              <button type="button" className="rounded-lg border border-brand-200 bg-white px-2 py-1 text-[10.5px] font-bold text-ink-soft hover:bg-brand-50" onClick={() => enableBack('blank')}>
+                双面自动分页
+              </button>
+            ) : (
+              <>
+                <button type="button" className="rounded-lg border border-brand-200 bg-white px-2 py-1 text-[10.5px] font-bold text-ink-soft hover:bg-brand-50" onClick={repage}>
+                  重新自动分页
+                </button>
+                <button type="button" className="rounded-lg border border-red-200 bg-white px-2 py-1 text-[10.5px] font-bold text-red-500 hover:bg-red-50" onClick={disableBack}>
+                  关闭双面
+                </button>
+              </>
+            )}
             <Button variant="ghost" size="sm" onClick={undo}>
               撤销
             </Button>
