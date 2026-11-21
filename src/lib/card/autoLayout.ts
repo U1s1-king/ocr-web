@@ -90,7 +90,7 @@ function flowToBack(front: CardDoc, incoming: CardDoc, existingBack: CardDoc | n
   }
   back.groups = [...(back.groups ?? []), ...split.move]
   const maxBottom = Math.max(...boxes(back).map((b) => b.y + b.h), 0)
-  return { front: nextFront, back, overflow: maxBottom > page.h + 2 }
+  return { front: nextFront, back, overflow: maxBottom > page.h + 20 }
 }
 
 /**
