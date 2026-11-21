@@ -30,6 +30,12 @@ export type ModuleDef = {
   children: ModuleChild[]
 }
 
+export const MODULE_GROUPS: Array<{ id: string; label: string; hint: string; ids: string[] }> = [
+  { id: 'core', label: '核心业务', hint: '试卷 → 考试 → 成绩 → 复核', ids: ['papers', 'exams', 'results', 'reviews'] },
+  { id: 'data', label: '资源服务', hint: '文件、学生名册', ids: ['files', 'students'] },
+  { id: 'system', label: '系统服务', hint: '接口日志与设置', ids: ['logs', 'settings'] },
+]
+
 export const MODULES: ModuleDef[] = [
   {
     id: 'papers',

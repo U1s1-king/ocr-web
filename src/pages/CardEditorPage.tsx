@@ -11,6 +11,7 @@ import { papersApi } from '../m/api'
 import type { Block, Question, Region } from '../api/types'
 import { CardSheet } from '../lib/card/render'
 import { addChoiceGroup, addPresetBlock, addSubjectiveGroup, groupOf, splitGroup } from '../lib/card/components'
+import { BARCODE_FORMATS, validateBarcode } from '../lib/card/barcode'
 import {
   createPaperFromDoc,
   readLocalDoc,
@@ -24,6 +25,8 @@ import {
   cloneDoc,
   mm2u,
   type CardGroup,
+  type CardBarcode,
+  type CardBarcodeFormat,
   paperMm,
   u2mm,
   validateCard,
@@ -82,6 +85,9 @@ export default function CardEditorPage() {
   const [subjScore, setSubjScore] = useState(10)
   const [blankCount, setBlankCount] = useState(2)
   const [blankHeight, setBlankHeight] = useState(30)
+  const [barcodeFormat, setBarcodeFormat] = useState<CardBarcodeFormat>('CODE128')
+  const [barcodeValue, setBarcodeValue] = useState('')
+  const [barcodeShowText, setBarcodeShowText] = useState(true)
 
   const past = useRef<CardDoc[]>([])
   const future = useRef<CardDoc[]>([])
@@ -220,15 +226,21 @@ export default function CardEditorPage() {
   const pxPerMm = PX_PER_MM * zoom
 
   function findRegion(d: CardDoc, eid: string): Region | undefined {
-    return d.content.questions.find((q) => q.id === eid)?.region ?? d.content.blocks?.find((b) => b.id === eid)?.region
+    return (
+      d.content.questions.find((q) => q.id === eid)?.region ??
+      d.content.blocks?.find((b) => b.id === eid)?.region ??
+      d.barcodes?.find((bc) => bc.id === eid)?.region
+    )
   }
   function setRegion(d: CardDoc, eid: string, r: Region) {
     const q = d.content.questions.find((x) => x.id === eid)
     if (q) q.region = r
     const b = d.content.blocks?.find((x) => x.id === eid)
     if (b) b.region = r
+    const bc = d.barcodes?.find((x) => x.id === eid)
+    if (bc) bc.region = r
   }
-  const isBlock = (eid: string) => Boolean(doc?.content.blocks?.some((b) => b.id === eid))
+  const isBlock = (eid: string) => Boolean(doc?.content.blocks?.some((b) => b.id === eid) || doc?.barcodes?.some((bc) => bc.id === eid))
 
   function beginLive(e: any) {
     const eid: string = e.target.dataset.id
@@ -455,6 +467,7 @@ export default function CardEditorPage() {
     for (const eid of sel) {
       next.content.questions = next.content.questions.filter((q) => q.id !== eid)
       next.content.blocks = (next.content.blocks ?? []).filter((b) => b.id !== eid)
+      next.barcodes = (next.barcodes ?? []).filter((bc) => bc.id !== eid)
       delete next.qmeta[eid]
       delete next.bmeta[eid]
       if (next.content.answerKey) delete next.content.answerKey[eid]
@@ -590,6 +603,45 @@ export default function CardEditorPage() {
     applyGenerated(addSubjectiveGroup(doc, { count: blankCount, style: 'blank', heightMm: blankHeight, score: subjScore }))
   }
 
+  function addCustomBarcode() {
+    if (!doc) return
+    const bad = validateBarcode(barcodeFormat, barcodeValue)
+    if (bad) {
+      toast(bad, 'err')
+      return
+    }
+    pushHistory()
+    const page = paperMm(doc.meta.paperSize, doc.meta.orientation)
+    const maxY = Math.max(
+      14,
+      ...doc.content.questions.map((q) => (q.region.y + q.region.height) * 0.7),
+      ...(doc.content.blocks ?? []).map((b) => (b.region.y + b.region.height) * 0.7),
+    )
+    const id = `bc${Date.now().toString(36)}`
+    const bc: CardBarcode = {
+      id,
+      format: barcodeFormat,
+      value: barcodeValue.trim(),
+      showText: barcodeShowText,
+      region: { x: mm2u(page.w - 14 - 54), y: mm2u(Math.min(page.h - 28, maxY + 3)), width: mm2u(54), height: mm2u(26) },
+    }
+    const group: CardGroup = {
+      id: `grpbc${Date.now().toString(36)}`,
+      kind: 'barcode',
+      name: `条形码 · ${bc.value}`,
+      itemIds: [id],
+      config: { heightMm: 26 },
+    }
+    const next = cloneDoc(doc)
+    next.barcodes = [...(next.barcodes ?? []), bc]
+    next.groups = [...(next.groups ?? []), group]
+    setDoc(next)
+    setDirty(true)
+    setSel([id])
+    setPrimary(id)
+    toast('已添加自定义条形码', 'ok')
+  }
+
   function addPreset(kind: 'text' | 'title' | 'section' | 'divider' | 'notice' | 'student' | 'barcode' | 'header' | 'footer') {
     if (!doc) return
     applyGenerated(addPresetBlock(doc, kind))
@@ -611,6 +663,7 @@ export default function CardEditorPage() {
     const ids = new Set(group.itemIds)
     next.content.questions = next.content.questions.filter((q) => !ids.has(q.id))
     next.content.blocks = (next.content.blocks ?? []).filter((b) => !ids.has(b.id))
+    next.barcodes = (next.barcodes ?? []).filter((bc) => !ids.has(bc.id))
     for (const id of ids) {
       delete next.qmeta[id]
       delete next.bmeta[id]
@@ -628,10 +681,19 @@ export default function CardEditorPage() {
     block?: Partial<Block>
     qmeta?: Partial<QuestionMeta>
     bmeta?: Partial<BlockMeta>
+    barcode?: Partial<CardBarcode>
   }) {
     if (!doc || !primary) return
     pushHistory()
     const next = cloneDoc(doc)
+    const bar = next.barcodes?.find((x) => x.id === primary)
+    if (bar) {
+      if (patch.region) Object.assign(bar.region, patch.region)
+      if (patch.barcode) Object.assign(bar, patch.barcode)
+      setDoc(next)
+      setDirty(true)
+      return
+    }
     const q = next.content.questions.find((x) => x.id === primary)
     if (q) {
       if (patch.q) Object.assign(q, patch.q)
@@ -750,7 +812,8 @@ export default function CardEditorPage() {
 
   const primaryQ = primary ? doc?.content.questions.find((q) => q.id === primary) : undefined
   const primaryB = primary ? (doc?.content.blocks ?? []).find((b) => b.id === primary) : undefined
-  const primaryRegion = primaryQ?.region ?? primaryB?.region ?? null
+  const primaryBar = primary ? doc?.barcodes?.find((bc) => bc.id === primary) : undefined
+  const primaryRegion = primaryQ?.region ?? primaryB?.region ?? primaryBar?.region ?? null
 
   if (loading) {
     return (
@@ -784,6 +847,11 @@ export default function CardEditorPage() {
       id: b.id,
       label: doc.bmeta[b.id]?.kind === 'section' ? `标题 · ${b.text.slice(0, 12)}` : `文本 · ${b.text.slice(0, 12)}`,
       sub: `${Math.round(u2mm(b.region.width))}×${Math.round(u2mm(b.region.height))}mm`,
+    })),
+    ...(doc.barcodes ?? []).map((bc) => ({
+      id: bc.id,
+      label: `条形码 · ${bc.format}`,
+      sub: `${bc.value.slice(0, 18)} · ${Math.round(u2mm(bc.region.width))}×${Math.round(u2mm(bc.region.height))}mm`,
     })),
   ]
   const hiddenSet = new Set(doc.hidden ?? [])
@@ -964,7 +1032,7 @@ export default function CardEditorPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => downloadText(JSON.stringify({ version: 3, meta: doc.meta, content: doc.content, qmeta: doc.qmeta, bmeta: doc.bmeta, groups: doc.groups ?? [] }, null, 2), `${title || '答题卡'}.json`)}
+                onClick={() => downloadText(JSON.stringify({ version: 3, meta: doc.meta, content: doc.content, qmeta: doc.qmeta, bmeta: doc.bmeta, groups: doc.groups ?? [], barcodes: doc.barcodes ?? [] }, null, 2), `${title || '答题卡'}.json`)}
               >
                 <DownloadIcon className="h-3.5 w-3.5" /> 导出
               </Button>
@@ -1041,6 +1109,41 @@ export default function CardEditorPage() {
                 </Button>
               </div>
 
+              <div className="rounded-xl border border-brand-100 bg-brand-50/40 p-2.5">
+                <p className="text-[11px] font-bold text-ink">自定义条形码</p>
+                <div className="mt-1.5 grid grid-cols-[1fr_auto] gap-1.5">
+                  <Field label="内容">
+                    <input
+                      className="w-full rounded-lg border border-brand-200 px-1.5 py-1 text-[11.5px]"
+                      placeholder="例如 20261109001"
+                      value={barcodeValue}
+                      onChange={(e) => setBarcodeValue(e.target.value)}
+                    />
+                  </Field>
+                  <Field label="格式">
+                    <select
+                      className="rounded-lg border border-brand-200 px-1 py-1 text-[11.5px]"
+                      value={barcodeFormat}
+                      onChange={(e) => setBarcodeFormat(e.target.value as CardBarcodeFormat)}
+                    >
+                      {BARCODE_FORMATS.map((f) => (
+                        <option key={f.value} value={f.value}>{f.label}</option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+                <label className="mt-1.5 flex items-center gap-1.5 text-[10.5px] font-semibold text-ink-soft">
+                  <input type="checkbox" checked={barcodeShowText} onChange={(e) => setBarcodeShowText(e.target.checked)} />
+                  显示人眼可读文字
+                </label>
+                <Button size="sm" className="mt-2 w-full" onClick={addCustomBarcode}>
+                  <PlusIcon className="h-3.5 w-3.5" /> 添加自定义条形码
+                </Button>
+                <p className="mt-1 text-[9.5px] leading-relaxed text-ink-soft/60">
+                  默认 54×26mm，可拖动缩放；与“贴条形码区”占位互不影响。
+                </p>
+              </div>
+
               <div>
                 <p className="mb-1.5 text-[11px] font-bold text-ink">基础组件</p>
                 <div className="flex flex-wrap gap-1.5">
@@ -1071,7 +1174,7 @@ export default function CardEditorPage() {
 
           <Card className="!p-4">
             <div className="flex items-center justify-between">
-              <p className="text-[12px] font-black text-ink">{primary ? (primaryQ ? '题目属性' : '文本块属性') : '未选中元素'}</p>
+              <p className="text-[12px] font-black text-ink">{primary ? (primaryQ ? '题目属性' : primaryBar ? '条形码属性' : '文本块属性') : '未选中元素'}</p>
               {primary && (
                 <div className="flex gap-1">
                   <Button variant="ghost" size="sm" onClick={duplicateSelected}>
@@ -1115,6 +1218,44 @@ export default function CardEditorPage() {
                     />
                   </Field>
                 ))}
+              </div>
+            )}
+
+            {primaryBar && (
+              <div className="mt-3 space-y-2.5">
+                <div className="grid grid-cols-2 gap-1.5">
+                  <Field label="格式">
+                    <select
+                      className="w-full rounded-lg border border-brand-200 px-1 py-1 text-[11.5px]"
+                      value={primaryBar.format}
+                      onChange={(e) => patchSelected({ barcode: { format: e.target.value as CardBarcodeFormat } })}
+                    >
+                      {BARCODE_FORMATS.map((f) => (
+                        <option key={f.value} value={f.value}>{f.label}</option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="显示文字">
+                    <select
+                      className="w-full rounded-lg border border-brand-200 px-1 py-1 text-[11.5px]"
+                      value={primaryBar.showText === false ? '0' : '1'}
+                      onChange={(e) => patchSelected({ barcode: { showText: e.target.value === '1' } })}
+                    >
+                      <option value="1">显示</option>
+                      <option value="0">隐藏</option>
+                    </select>
+                  </Field>
+                </div>
+                <Field label="条形码内容">
+                  <input
+                    className="w-full rounded-lg border border-brand-200 px-2 py-1 text-[11.5px]"
+                    value={primaryBar.value}
+                    onChange={(e) => patchSelected({ barcode: { value: e.target.value } })}
+                  />
+                </Field>
+                <p className="text-[10px] leading-relaxed text-ink-soft/65">
+                  前端按所选格式打印；保存后端时会同步一条 Code128 镜像条码，后端标准目前只接受 Code128 类型。
+                </p>
               </div>
             )}
 

@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { examsApi, resultsApi, reviewsApi, type ExamSummary, type ResultItem, type ResultPage } from '../api'
 import { BRAND } from '../../lib/brand'
-import { MODULES, MODULE_TONE, type ModuleIconKey } from '../../lib/modules'
+import { MODULES, MODULE_GROUPS, MODULE_TONE, type ModuleIconKey } from '../../lib/modules'
 import { MODULE_ICONS } from '../../components/moduleIcons'
 import { LogoMark } from '../../components/Logo'
 import { IcCamera, IcChart, IcFile, IcPlus, IcRight, IcSearch, IcUpload, IcUsers } from '../icons'
@@ -125,29 +125,39 @@ export default function Home() {
         <h2 className="mo-eyebrow">全部功能</h2>
         <span className="text-[11.5px] text-ink-soft">{MODULES.length} 个模块</span>
       </div>
-      <div className="mhome-modules">
-        {MODULES.map((m, i) => {
-          const Icon = MODULE_ICONS[m.icon as ModuleIconKey]
-          const tone = MODULE_TONE[m.tone]
-          return (
-            <button
-              key={m.id}
-              type="button"
-              className="mhome-module"
-              style={{ '--i': i + 4 } as React.CSSProperties}
-              onClick={() => nav(m.m)}
-            >
-              <span className="mhome-module-ico" style={{ background: tone.bg, color: tone.fg }}>
-                <Icon className="h-[20px] w-[20px]" />
-              </span>
-              <span className="min-w-0 flex-1 text-left">
-                <span className="mhome-module-title">{m.label}</span>
-                <span className="mhome-module-desc">{m.hint}</span>
-              </span>
-              <IcRight style={{ fontSize: 13 }} className="flex-none text-ink-soft/50" />
-            </button>
-          )
-        })}
+      <div className="space-y-3">
+        {MODULE_GROUPS.map((group, gi) => (
+          <div key={group.id}>
+            <div className="mb-1.5 flex items-baseline gap-2">
+              <p className="text-[10.5px] font-black tracking-[0.12em] text-ink-soft/60">{group.label}</p>
+              <p className="text-[9.5px] text-ink-soft/40">{group.hint}</p>
+            </div>
+            <div className="mhome-modules">
+              {MODULES.filter((m) => group.ids.includes(m.id)).map((m, i) => {
+                const Icon = MODULE_ICONS[m.icon as ModuleIconKey]
+                const tone = MODULE_TONE[m.tone]
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    className="mhome-module"
+                    style={{ '--i': gi * 4 + i + 4 } as React.CSSProperties}
+                    onClick={() => nav(m.m)}
+                  >
+                    <span className="mhome-module-ico" style={{ background: tone.bg, color: tone.fg }}>
+                      <Icon className="h-[20px] w-[20px]" />
+                    </span>
+                    <span className="min-w-0 flex-1 text-left">
+                      <span className="mhome-module-title">{m.label}</span>
+                      <span className="mhome-module-desc">{m.hint}</span>
+                    </span>
+                    <IcRight style={{ fontSize: 13 }} className="flex-none text-ink-soft/50" />
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* 最近成绩 */}

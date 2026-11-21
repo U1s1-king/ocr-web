@@ -122,6 +122,17 @@ export interface CardMeta {
 
 export type CardGroupKind = 'choice' | 'subjective' | 'blank' | 'text' | 'notice' | 'barcode' | 'header' | 'footer'
 
+export type CardBarcodeFormat = 'CODE128' | 'CODE39' | 'EAN13' | 'ITF14'
+
+/** 自定义条形码组件（本机设计文档；打印为 SVG，可同步 content.barcode） */
+export interface CardBarcode {
+  id: string
+  region: Region
+  format: CardBarcodeFormat
+  value: string
+  showText?: boolean
+}
+
 export interface CardGroup {
   id: string
   kind: CardGroupKind
@@ -151,6 +162,8 @@ export interface CardDoc {
   bmeta: Record<string, BlockMeta>
   /** 组件组（选择/主观/空白框等），只存本机设计文档，不提交后端 */
   groups?: CardGroup[]
+  /** 自定义条形码（可多个；第一个同步到标准 content.barcode） */
+  barcodes?: CardBarcode[]
   /** 编辑/打印时隐藏的元素 id（不进后端，不影响识别） */
   hidden?: string[]
   updatedAt: number

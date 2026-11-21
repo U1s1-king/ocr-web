@@ -275,3 +275,23 @@ python deploy/cloudflare/deploy_pages.py     # 项目 ocr-web，产出 *.pages.d
 - 后端：`PUT /api/v1/papers/{id}`，提交标准 questions/blocks
 - 本机：localStorage CardDoc v3，包含 qmeta / bmeta / groups
 - 导出 JSON：包含 meta / content / qmeta / bmeta / groups
+
+
+## 2026-11 自定义条形码 + 模块分组
+
+### 条形码
+- 使用 MIT 开源的 [JsBarcode](https://github.com/lindell/JsBarcode)（v3.12.3）前端生成 SVG，打印为矢量。
+- 支持格式：Code128、Code39、EAN-13、ITF-14。
+- 编辑器组件库新增「自定义条形码」：内容、格式、显示文字、尺寸（可拖动缩放）。
+- 与「贴条形码区」占位组件相互独立，不会把示例学生粘贴处替换成真实条码。
+- 保存到后端时，把第一条自定义条码同步为 `content.barcode`（`type: code128`，后端标准目前只接受 Code128；其他格式前端打印，后端记录 Code128 镜像值）。
+- 本机 CardDoc / 导出 design JSON 保存全部自定义条码。
+
+第三方 License：JsBarcode MIT；后续若启用 bwip-js，同样为 MIT。
+
+### 模块分组
+- 桌面侧栏、移动首页按三组划分：
+  - 核心业务：试卷 → 考试 → 成绩 → 人工复核
+  - 资源服务：文件、学生
+  - 系统服务：接口日志、设置
+- 各模块保留独立职责，减少跨模块入口混淆。

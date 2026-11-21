@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { ChevronRightIcon, CloseIcon, MenuIcon, ScanIcon } from './icons'
 import { Logo } from './Logo'
 import { BRAND } from '../lib/brand'
-import { MODULES, type ModuleDef } from '../lib/modules'
+import { MODULES, MODULE_GROUPS, type ModuleDef } from '../lib/modules'
 import type { ModuleIconKey } from '../lib/modules'
 import { MODULE_ICONS } from './moduleIcons'
 import { motion } from 'framer-motion'
@@ -170,7 +170,12 @@ export function Layout() {
         </NavLink>
 
         <nav className="stagger flex-1 space-y-1 overflow-y-auto px-2.5 pb-4">
-          {MODULES.map((m) => renderModule(m, m.id === activeId, false))}
+          {MODULE_GROUPS.map((group) => (
+            <div key={group.id} className="pt-2 first:pt-0">
+              <p className="px-3 pb-1 text-[9px] font-bold tracking-[0.16em] text-ink-soft/40">{group.label}</p>
+              {MODULES.filter((m) => group.ids.includes(m.id)).map((m) => renderModule(m, m.id === activeId, false))}
+            </div>
+          ))}
         </nav>
 
         <div className="px-4 pb-4">
@@ -244,7 +249,12 @@ export function Layout() {
                 <ScanIcon className="h-[18px] w-[18px]" />
                 切换到手机版
               </NavLink>
-              {MODULES.map((m) => renderModule(m, m.id === activeId, true))}
+              {MODULE_GROUPS.map((group) => (
+                <div key={group.id} className="pt-2 first:pt-0">
+                  <p className="px-3 pb-1 text-[9px] font-bold tracking-[0.16em] text-ink-soft/40">{group.label}</p>
+                  {MODULES.filter((m) => group.ids.includes(m.id)).map((m) => renderModule(m, m.id === activeId, true))}
+                </div>
+              ))}
             </nav>
 
             <div className="px-4 pb-5">

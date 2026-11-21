@@ -13,6 +13,7 @@ import {
   round2,
   type BlockMeta,
   type CardDoc,
+  type CardBarcode,
   type CardSpec,
   type ObjectiveGroupSpec,
   type Orientation,
@@ -621,6 +622,28 @@ export function docFromContent(
       qmeta[q.id] = { style: 'lines', rows: Math.max(2, Math.floor((h - 3) / LINE_MM)) }
     }
   }
+  const barcodes: CardBarcode[] = []
+  if (content.barcode) {
+    const bc = content.barcode
+    const unit = (v: number, u: string) => {
+      if (u === 'mm') return v / 0.7
+      if (u === 'ratio') return v * content.canvas.width
+      return v
+    }
+    let x = unit(bc.offset.x, bc.offset.unit)
+    let y = unit(bc.offset.y, bc.offset.unit)
+    const w = unit(bc.size.width, bc.size.unit)
+    const h = unit(bc.size.height, bc.size.unit)
+    if (bc.anchor.includes('right')) x = content.canvas.width - x - w
+    if (bc.anchor.includes('bottom')) y = content.canvas.height - y - h
+    barcodes.push({
+      id: bc.id,
+      region: { x, y, width: w, height: h },
+      format: 'CODE128',
+      value: bc.value,
+      showText: true,
+    })
+  }
   return {
     version: 3,
     meta: {
@@ -632,6 +655,7 @@ export function docFromContent(
     content,
     qmeta,
     bmeta: {},
+    barcodes,
     updatedAt: Date.now(),
   }
 }

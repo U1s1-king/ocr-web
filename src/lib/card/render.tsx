@@ -5,6 +5,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import type { Block, Question } from '../../api/types'
 import { MM_PER_UNIT, paperMm, u2mm, type CardDoc } from './types'
+import { BarcodeSvg } from './barcode'
 
 const PX_PER_MM = 96 / 25.4
 const INK = '#20242a'
@@ -63,6 +64,22 @@ export function CardBody({ doc }: { doc: CardDoc }) {
       ))}
       {doc.content.questions?.filter((q) => !doc.hidden?.includes(q.id)).map((q) => (
         <QuestionView key={q.id} doc={doc} q={q} />
+      ))}
+      {doc.barcodes?.filter((b) => !doc.hidden?.includes(b.id)).map((b) => (
+        <div
+          key={b.id}
+          className="absolute"
+          style={{
+            left: mm(u2mm(b.region.x)),
+            top: mm(u2mm(b.region.y)),
+            width: mm(u2mm(b.region.width)),
+            height: mm(u2mm(b.region.height)),
+            background: '#fff',
+            overflow: 'hidden',
+          }}
+        >
+          <BarcodeSvg format={b.format} value={b.value} showText={b.showText !== false} />
+        </div>
       ))}
       {doc.content.markers?.map((m) => (
         <div

@@ -5,7 +5,8 @@ import type { Region } from '../../api/types'
 import { useToast } from '../../components/Toast'
 import { CardSheet } from '../../lib/card/render'
 import { addChoiceGroup, addPresetBlock, addSubjectiveGroup, groupOf, splitGroup } from '../../lib/card/components'
-import { cloneDoc, mm2u, paperMm, u2mm, type CardDoc, type CardGroup } from '../../lib/card/types'
+import { BARCODE_FORMATS, validateBarcode } from '../../lib/card/barcode'
+import { cloneDoc, mm2u, paperMm, u2mm, type CardDoc, type CardGroup, type CardBarcode, type CardBarcodeFormat } from '../../lib/card/types'
 import { resolveDoc, savePaperDoc } from '../../lib/card/store'
 import { Btn, Card, Page, Sheet } from '../ui'
 import { IcBack, IcLayers, IcPlus, IcSliders, IcTrash } from '../icons'
@@ -37,6 +38,9 @@ export default function CardEdit() {
   const [subjRows, setSubjRows] = useState(6)
   const [subjStyle, setSubjStyle] = useState<'lines' | 'blank' | 'grid'>('lines')
   const [blankCount, setBlankCount] = useState(2)
+  const [barcodeFormat, setBarcodeFormat] = useState<CardBarcodeFormat>('CODE128')
+  const [barcodeValue, setBarcodeValue] = useState('')
+  const [barcodeShowText, setBarcodeShowText] = useState(true)
 
   const drag = useRef<{ ids: string[]; sx: number; sy: number; origins: Map<string, Region> } | null>(null)
   const hits = useRef(new Map<string, HTMLElement>())
@@ -87,7 +91,8 @@ export default function CardEdit() {
   const selB = sel ? (doc.content.blocks ?? []).find((b) => b.id === sel) : undefined
   const selGroup = sel ? (doc.groups ?? []).find((g) => g.itemIds.includes(sel)) : undefined
   const selectedGroup = selGroup
-  const region = selQ?.region ?? selB?.region
+  const selBar = sel ? (doc.barcodes ?? []).find((bc) => bc.id === sel) : undefined
+  const region = selQ?.region ?? selB?.region ?? selBar?.region
 
   function pushDoc(next: CardDoc) {
     setDoc(next)
@@ -147,6 +152,8 @@ export default function CardEdit() {
       const b = next.content.blocks?.find((x2) => x2.id === id)
       if (q) q.region = { ...q.region, x: mm2u(x), y: mm2u(y) }
       if (b) b.region = { ...b.region, x: mm2u(x), y: mm2u(y) }
+      const bc = next.barcodes?.find((x2) => x2.id === id)
+      if (bc) bc.region = { ...bc.region, x: mm2u(x), y: mm2u(y) }
     }
     for (const id of d.ids) {
       const el = hits.current.get(id)
@@ -208,11 +215,46 @@ export default function CardEdit() {
     pushDoc(next)
   }
 
+  function addBarcode() {
+    if (!doc) return
+    const bad = validateBarcode(barcodeFormat, barcodeValue)
+    if (bad) {
+      toast(bad, 'err')
+      return
+    }
+    const page = paperMm(doc.meta.paperSize, doc.meta.orientation)
+    const maxY = Math.max(14, ...doc.content.questions.map((q) => (q.region.y + q.region.height) * 0.7))
+    const id = `bc${Date.now().toString(36)}`
+    const bc: CardBarcode = {
+      id,
+      format: barcodeFormat,
+      value: barcodeValue.trim(),
+      showText: barcodeShowText,
+      region: { x: mm2u(page.w - 14 - 54), y: mm2u(Math.min(page.h - 28, maxY + 3)), width: mm2u(54), height: mm2u(26) },
+    }
+    const next = cloneDoc(doc)
+    next.barcodes = [...(next.barcodes ?? []), bc]
+    next.groups = [...(next.groups ?? []), { id: `grpbc${id}`, kind: 'barcode', name: `条形码 · ${bc.value}`, itemIds: [id] }]
+    setSel(id)
+    setLibOpen(false)
+    pushDoc(next)
+    toast('已添加自定义条形码', 'ok')
+  }
+
+  function patchBarcode(patch: Partial<CardBarcode>) {
+    if (!doc || !selBar) return
+    const next = cloneDoc(doc)
+    const bc = next.barcodes?.find((b) => b.id === sel)
+    if (bc) Object.assign(bc, patch)
+    pushDoc(next)
+  }
+
   function removeSelected() {
     if (!doc || !sel) return
     const next = cloneDoc(doc)
     next.content.questions = next.content.questions.filter((q) => q.id !== sel)
     next.content.blocks = (next.content.blocks ?? []).filter((b) => b.id !== sel)
+    next.barcodes = (next.barcodes ?? []).filter((bc) => bc.id !== sel)
     delete next.qmeta[sel]
     delete next.bmeta[sel]
     next.groups = (next.groups ?? []).map((g) => ({ ...g, itemIds: g.itemIds.filter((x) => x !== sel) })).filter((g) => g.itemIds.length)
@@ -248,6 +290,7 @@ export default function CardEdit() {
   const allItems = [
     ...doc.content.questions.map((q) => ({ id: q.id, label: q.type === 'mark' ? `选择题 ${q.displayNumber ?? ''}` : `主观题 ${q.displayNumber ?? ''}` })),
     ...(doc.content.blocks ?? []).map((b) => ({ id: b.id, label: b.text.slice(0, 16) || '文本块' })),
+    ...(doc.barcodes ?? []).map((bc) => ({ id: bc.id, label: `条形码 · ${bc.value}` })),
   ]
   const groupedIds = new Set((doc.groups ?? []).flatMap((g) => g.itemIds))
   const looseItems = allItems.filter((it) => !groupedIds.has(it.id))
@@ -349,6 +392,30 @@ export default function CardEdit() {
               </label>
             ))}
           </div>
+          {selBar && (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <label className="mo-field">
+                <span className="mo-field-label">格式</span>
+                <select className="mo-input" value={selBar.format} onChange={(e) => patchBarcode({ format: e.target.value as CardBarcodeFormat })}>
+                  {BARCODE_FORMATS.map((f) => (
+                    <option key={f.value} value={f.value}>{f.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="mo-field">
+                <span className="mo-field-label">显示文字</span>
+                <select className="mo-input" value={selBar.showText === false ? '0' : '1'} onChange={(e) => patchBarcode({ showText: e.target.value === '1' })}>
+                  <option value="1">显示</option>
+                  <option value="0">隐藏</option>
+                </select>
+              </label>
+              <label className="mo-field col-span-2">
+                <span className="mo-field-label">条形码内容</span>
+                <input className="mo-input" value={selBar.value} onChange={(e) => patchBarcode({ value: e.target.value })} />
+              </label>
+            </div>
+          )}
+
           {selQ && (
             <div className="mt-3 grid grid-cols-3 gap-2">
               <label className="mo-field">
@@ -402,6 +469,32 @@ export default function CardEdit() {
             <label className="mo-field mt-2"><span className="mo-field-label">个数</span><input className="mo-input" type="number" value={blankCount} onChange={(e) => setBlankCount(Number(e.target.value))} /></label>
             <div className="mt-2"><Btn block onClick={addBlank}>添加空白方框组</Btn></div>
           </div>
+          <div className="mo-card !p-3">
+            <p className="text-[12px] font-extrabold">自定义条形码</p>
+            <label className="mo-field mt-2">
+              <span className="mo-field-label">内容</span>
+              <input className="mo-input" placeholder="例如 20261109001" value={barcodeValue} onChange={(e) => setBarcodeValue(e.target.value)} />
+            </label>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <label className="mo-field">
+                <span className="mo-field-label">格式</span>
+                <select className="mo-input" value={barcodeFormat} onChange={(e) => setBarcodeFormat(e.target.value as CardBarcodeFormat)}>
+                  {BARCODE_FORMATS.map((f) => (
+                    <option key={f.value} value={f.value}>{f.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="mo-field">
+                <span className="mo-field-label">显示文字</span>
+                <select className="mo-input" value={barcodeShowText ? '1' : '0'} onChange={(e) => setBarcodeShowText(e.target.value === '1')}>
+                  <option value="1">显示</option>
+                  <option value="0">隐藏</option>
+                </select>
+              </label>
+            </div>
+            <div className="mt-2"><Btn block onClick={addBarcode}>添加自定义条形码</Btn></div>
+          </div>
+
           <div className="flex flex-wrap gap-1.5">
             {([
               ['text', '文本'], ['title', '标题'], ['section', '分组标题'], ['divider', '分割线'],

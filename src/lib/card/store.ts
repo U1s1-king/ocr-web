@@ -76,6 +76,22 @@ export function contentForBackend(doc: CardDoc): ExamContent {
       ...(q.type === 'subjective' ? {} : { choices: q.choices ?? [] }),
     })),
     ...(c.barcode ? { barcode: c.barcode } : {}),
+    ...(doc.barcodes?.[0]
+      ? {
+          barcode: {
+            id: doc.barcodes[0].id,
+            type: 'code128' as const,
+            value: doc.barcodes[0].value,
+            anchor: 'top-left' as const,
+            offset: { unit: 'canvas' as const, x: doc.barcodes[0].region.x, y: doc.barcodes[0].region.y },
+            size: {
+              unit: 'canvas' as const,
+              width: doc.barcodes[0].region.width,
+              height: doc.barcodes[0].region.height,
+            },
+          },
+        }
+      : {}),
     answerKey: c.answerKey ?? {},
   }
 }
