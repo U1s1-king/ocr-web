@@ -171,7 +171,7 @@ export default function Papers() {
                       <span className="mo-feed-ico">
                         <IcGrid style={{ fontSize: 21 }} />
                       </span>
-                      <span className="mo-feed-eyebrow" style={{ color: 'var(--mo-ink-2)' }}>模板工坊</span>
+                      <span className="mo-feed-eyebrow" style={{ color: 'var(--mo-ink-2)' }}>答题卡模板</span>
                       <span className="mo-feed-title text-[23px]">{CARD_TEMPLATES.length} 份答题卡模板</span>
                       <span className="mo-feed-desc" style={{ color: 'var(--mo-ink-2)' }}>按体系/科目/纸型自动出卡，不用手画</span>
                       <span className="mo-feed-foot text-brand-700">
@@ -307,7 +307,7 @@ export default function Papers() {
               <IcSpark style={{ fontSize: 18 }} />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-[12px] font-extrabold">模板工坊</p>
+              <p className="text-[12px] font-extrabold">答题卡模板</p>
               <p className="mo-muted mt-0.5">选模板后可调题量、换纸型、精调坐标，再保存为试卷或打印。</p>
             </div>
           </div>

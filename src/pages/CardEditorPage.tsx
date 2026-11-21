@@ -832,7 +832,7 @@ export default function CardEditorPage() {
       <Card>
         <p className="py-10 text-center text-[12.5px] font-semibold text-ink-soft">{loadErr || '没有可编辑的答题卡'}</p>
         <div className="text-center">
-          <Button onClick={() => nav('/papers/studio')}>去模板工坊</Button>
+          <Button onClick={() => nav('/papers/studio')}>去答题卡制作</Button>
         </div>
       </Card>
     )
