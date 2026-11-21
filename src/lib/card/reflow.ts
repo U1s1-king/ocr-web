@@ -38,10 +38,12 @@ function splitGroups(doc: CardDoc, frontIds: Set<string>, backIds: Set<string>):
  * 把一张答题卡的全部题目/题区按顺序重新排版，正面放不下的内容强制顺延到背面。
  * 表头（标题、姓名、准考证号、条形码、注意事项）固定在正面顶部。
  */
-export function reflowTwoPages(front: CardDoc): { front: CardDoc; back: CardDoc; overflow: boolean } {
+export function reflowTwoPages(front: CardDoc, existingBack?: CardDoc | null): { front: CardDoc; back: CardDoc; overflow: boolean } {
   const page = paperMm(front.meta.paperSize, front.meta.orientation)
   const questions = front.content.questions ?? []
   const blocks = front.content.blocks ?? []
+  const backQuestions = existingBack?.content.questions ?? []
+  const backBlocks = existingBack?.content.blocks ?? []
   const firstQ = questions.length ? Math.min(...questions.map((q) => u2mm(q.region.y))) : page.h
 
   const headerBlocks = blocks.filter((b) => u2mm(b.region.y) < firstQ - 1)
@@ -54,6 +56,9 @@ export function reflowTwoPages(front: CardDoc): { front: CardDoc; back: CardDoc;
   const flowItems: FlowItem[] = [
     ...flowBlocks.map((b) => ({ id: b.id, kind: 'block' as const, y: u2mm(b.region.y), h: u2mm(b.region.height), w: u2mm(b.region.width), block: b })),
     ...questions.map((q) => ({ id: q.id, kind: 'question' as const, y: u2mm(q.region.y), h: u2mm(q.region.height), w: u2mm(q.region.width), question: q })),
+    // 背面内容排在正面之后，参与同一套两页重排
+    ...backBlocks.map((b) => ({ id: b.id, kind: 'block' as const, y: 10000 + u2mm(b.region.y), h: u2mm(b.region.height), w: u2mm(b.region.width), block: b })),
+    ...backQuestions.map((q) => ({ id: q.id, kind: 'question' as const, y: 10000 + u2mm(q.region.y), h: u2mm(q.region.height), w: u2mm(q.region.width), question: q })),
   ].sort((a, b) => a.y - b.y || a.w - b.w)
 
   const page1Questions: Question[] = []
@@ -171,6 +176,12 @@ export function reflowTwoPages(front: CardDoc): { front: CardDoc; back: CardDoc;
   const groups = splitGroups(front, frontIds, backIds)
   nextFront.groups = groups.front
   nextBack.groups = groups.back
+  const allQmeta = { ...front.qmeta, ...(front.back?.qmeta ?? {}) }
+  const allBmeta = { ...front.bmeta, ...(front.back?.bmeta ?? {}) }
+  nextFront.qmeta = allQmeta
+  nextBack.qmeta = allQmeta
+  nextFront.bmeta = allBmeta
+  nextBack.bmeta = allBmeta
 
   // 正面标记/画布沿用；背面使用同一套定位标记
   const backBottom = [...(nextBack.content.questions ?? []), ...(nextBack.content.blocks ?? [])].reduce(

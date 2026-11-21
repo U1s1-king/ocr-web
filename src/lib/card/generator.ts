@@ -7,6 +7,7 @@
  */
 import type { Block, ExamContent, Question } from '../../api/types'
 import { ANSWER_CARD_BARCODE_AREA } from '../barcode/templates'
+import { createSubjectBack } from './back'
 import {
   canvasOf,
   mm2u,
@@ -597,6 +598,8 @@ export function generateCard(spec: CardSpec): GeneratedCard {
         )
       }
       warnings.push(...built.warnings)
+      const back = createSubjectBack(built.doc)
+      built.doc.back = { content: back.content, qmeta: back.qmeta, bmeta: back.bmeta, hidden: [] }
       return { doc: built.doc, warnings, usedSize: a.size, usedOrientation: a.orientation }
     }
   }
@@ -604,6 +607,8 @@ export function generateCard(spec: CardSpec): GeneratedCard {
   const fallback = last ?? buildOnce(spec, 7.2, 3.2)
   warnings.push('内容过多，已尽量压缩；建议减少主观题行数或改用更大纸型')
   warnings.push(...fallback.warnings)
+  const back = createSubjectBack(fallback.doc)
+  fallback.doc.back = { content: back.content, qmeta: back.qmeta, bmeta: back.bmeta, hidden: [] }
   return { doc: fallback.doc, warnings, usedSize: lastAttempt.size, usedOrientation: lastAttempt.orientation }
 }
 

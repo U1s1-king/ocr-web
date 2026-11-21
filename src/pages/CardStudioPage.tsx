@@ -16,6 +16,7 @@ import {
 } from '../lib/card/catalog'
 import { generateCard } from '../lib/card/generator'
 import { CardSheet } from '../lib/card/render'
+import { backAsDoc } from '../lib/card/back'
 import {
   createPaperFromDoc,
   docFromRemoteTemplate,
@@ -59,6 +60,8 @@ export default function CardStudioPage() {
 
   const previewRef = useRef<HTMLDivElement>(null)
   const [zoom, setZoom] = useState(0.6)
+  const [previewSide, setPreviewSide] = useState<'front' | 'back'>('front')
+  const previewDoc = previewSide === 'back' && doc.back ? backAsDoc(doc) : doc
 
   useEffect(() => {
     const el = previewRef.current
@@ -371,10 +374,14 @@ export default function CardStudioPage() {
           <Card className="!p-3">
             <div ref={previewRef} className="flex max-h-[560px] min-h-[320px] items-start justify-center overflow-hidden bg-neutral-100/70 p-3">
               <div style={{ width: mmW * PX_PER_MM * zoom, height: mmH * PX_PER_MM * zoom, flex: 'none' }}>
-                <CardSheet doc={doc} zoom={zoom} />
+                <CardSheet doc={previewDoc} zoom={zoom} />
               </div>
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-2 px-1">
+              <div className="flex items-center gap-1 rounded-lg border border-brand-200 bg-white p-0.5">
+                <button type="button" className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${previewSide === 'front' ? 'bg-brand-600 text-white' : 'text-ink-soft'}`} onClick={() => setPreviewSide('front')}>正面</button>
+                <button type="button" className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${previewSide === 'back' ? 'bg-brand-600 text-white' : 'text-ink-soft'}`} onClick={() => setPreviewSide('back')}>背面</button>
+              </div>
               <span className="text-[10.5px] text-ink-soft/60">
                 {mmW}×{mmH}mm · 缩放 {Math.round(zoom * 100)}% · 定位块已内置四角
               </span>

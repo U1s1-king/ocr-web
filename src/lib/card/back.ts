@@ -129,3 +129,87 @@ export function withBack(front: CardDoc, back: CardDoc | null): CardDoc {
     },
   }
 }
+
+/**
+ * 科目化双面背面：
+ * 语文=整页作文格；英语=应用文+读后续写；数学/理科=三栏解答区；文科=两栏作答区。
+ * 所有模板生成时默认附带这一页，实现真正的双面答题卡。
+ */
+export function createSubjectBack(front: CardDoc): CardDoc {
+  const subject = `${front.meta.subject ?? ''} ${front.meta.templateName ?? ''}`.toLowerCase()
+  if (/语文|chinese|作文/.test(subject)) return createBackDoc(front, 'essay')
+  const page = paperMm(front.meta.paperSize, front.meta.orientation)
+  const qmeta: Record<string, QuestionMeta> = {}
+  const bmeta: Record<string, BlockMeta> = {}
+  const blocks: Block[] = []
+  const questions: Question[] = []
+
+  function title(text: string, y: number) {
+    blocks.push({
+      id: `back-title-${blocks.length}`,
+      type: 'text',
+      text,
+      region: { x: mm2u(14), y: mm2u(y), width: mm2u(page.w - 28), height: mm2u(7) },
+      style: { fontSize: 3.6, fontWeight: 'bold', textAlign: 'center' },
+    })
+  }
+
+  if (/英语|english|外语/.test(subject)) {
+    title('第Ⅱ卷 非选择题', 9)
+    const parts = [
+      { id: 'back-writing-1', label: '应用文写作', y: 19, h: (page.h - 38) * 0.36, score: 15 },
+      { id: 'back-writing-2', label: '读后续写', y: 19 + (page.h - 38) * 0.4, h: (page.h - 38) * 0.56, score: 25 },
+    ]
+    for (const p of parts) {
+      questions.push({ id: p.id, displayNumber: undefined, type: 'subjective', score: p.score, region: { x: mm2u(14), y: mm2u(p.y), width: mm2u(page.w - 28), height: mm2u(p.h) } })
+      qmeta[p.id] = { style: 'grid', gridCols: 18, label: p.label }
+    }
+    return finish(front, blocks, questions, qmeta, bmeta)
+  }
+
+  const science = /数学|math|物理|physics|化学|chemistry|生物|biology/.test(subject)
+  const cols = science ? 3 : 2
+  title('第Ⅱ卷 非选择题', 9)
+  const gap = 5
+  const margin = 14
+  const colW = (page.w - margin * 2 - gap * (cols - 1)) / cols
+  for (let i = 0; i < cols; i += 1) {
+    const id = `back-q${15 + i}`
+    questions.push({
+      id,
+      displayNumber: 15 + i,
+      type: 'subjective',
+      score: science ? 15 : 12,
+      region: { x: mm2u(margin + i * (colW + gap)), y: mm2u(18), width: mm2u(colW), height: mm2u(page.h - 30) },
+    })
+    qmeta[id] = { style: 'blank', rows: 1, label: `${15 + i}` }
+  }
+  return finish(front, blocks, questions, qmeta, bmeta)
+}
+
+function finish(
+  front: CardDoc,
+  blocks: Block[],
+  questions: Question[],
+  qmeta: Record<string, QuestionMeta>,
+  bmeta: Record<string, BlockMeta>,
+): CardDoc {
+  return {
+    version: 3,
+    meta: { ...front.meta },
+    content: {
+      schemaVersion: 1,
+      unit: 'canvas',
+      canvas: { ...front.content.canvas },
+      markers: (front.content.markers ?? []).map((m) => ({ ...m })),
+      blocks,
+      questions,
+      answerKey: {},
+    },
+    qmeta,
+    bmeta,
+    barcodes: [],
+    groups: [],
+    updatedAt: Date.now(),
+  }
+}
