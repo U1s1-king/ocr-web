@@ -1449,3 +1449,74 @@ header { z-index: 20; }
   .bc-label { border-color: #ddd; }
   .print-hide { display: none !important; }
 }
+
+/* 条形码单面标签设计器 */
+.barcode-design-canvas {
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+.bl-field {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  color: #111;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+.bl-field.is-selected {
+  outline: 0.3mm solid #2f6feb;
+  outline-offset: 0.2mm;
+  background: rgba(47, 111, 235, .035);
+  z-index: 3;
+}
+.bl-field .barcode-svg-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+}
+.bl-field .barcode-svg-wrap svg {
+  width: 100%;
+  height: 100%;
+}
+.bl-text {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bl-resize {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: #2f6feb;
+  border: 1px solid #fff;
+  z-index: 6;
+}
+.bl-resize.handle-se { right: -3px; bottom: -3px; cursor: nwse-resize; }
+.bl-resize.handle-e { right: -3px; top: 50%; margin-top: -3px; cursor: ew-resize; }
+.bl-resize.handle-s { bottom: -3px; left: 50%; margin-left: -3px; cursor: ns-resize; }
+
+.barcode-print-root { display: none; }
+.bp-page {
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  page-break-after: always;
+  break-after: page;
+}
+.bp-page:last-child { page-break-after: auto; break-after: auto; }
+.bp-label { position: absolute; overflow: hidden; }
+@media print {
+  .barcode-print-root {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    background: #fff;
+  }
+  .barcode-print-root .bl-field.is-selected { outline: none; background: none; }
+  .barcode-print-root .bl-resize { display: none; }
+}

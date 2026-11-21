@@ -14,6 +14,7 @@ import { addChoiceGroup, addPresetBlock, addSubjectiveGroup, groupOf, splitGroup
 import { BARCODE_FORMATS, validateBarcode } from '../lib/card/barcode'
 import { ANSWER_CARD_BARCODE_AREA } from '../lib/barcode/templates'
 import { backAsDoc, createBackDoc, withBack, type BackPreset } from '../lib/card/back'
+import { autoInsertGroup } from '../lib/card/autoLayout'
 import {
   createPaperFromDoc,
   readLocalDoc,
@@ -105,6 +106,7 @@ export default function CardEditorPage() {
   const past = useRef<CardDoc[]>([])
   const future = useRef<CardDoc[]>([])
   const stageRef = useRef<HTMLDivElement>(null)
+  const moveableRef = useRef<Moveable>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
   const hits = useRef(new Map<string, HTMLElement>())
   const origins = useRef(new Map<string, Region>())
@@ -410,6 +412,7 @@ export default function CardEditorPage() {
         t.style.width = ''
         t.style.height = ''
       }
+      requestAnimationFrame(() => moveableRef.current?.updateRect())
     }
   }
 
@@ -633,6 +636,19 @@ export default function CardEditorPage() {
 
   function applyGenerated(result: { doc: CardDoc; group: CardGroup }) {
     pushHistory()
+    // 题目组自动排版：选择题插到选择题末尾，主观题顺延，放不下自动移到背面
+    if (side === 'front' && frontDoc && ['choice', 'subjective', 'blank'].includes(result.group.kind)) {
+      const auto = autoInsertGroup(frontDoc, result.doc, backDoc, result.group)
+      setFrontDoc(auto.front)
+      setBackDoc(auto.back)
+      setSide(auto.side)
+      setDirty(true)
+      setSel(result.group.itemIds)
+      setPrimary(result.group.itemIds[0] ?? null)
+      if (auto.overflow) toast('背面也排满了，请减少题量或换 A3 纸张', 'err')
+      else toast(`已添加${result.group.name}，已自动重排`, 'ok')
+      return
+    }
     setDoc(result.doc)
     setDirty(true)
     setSel(result.group.itemIds)
@@ -1074,6 +1090,7 @@ export default function CardEditorPage() {
                 </CardSheet>
 
                 <Moveable
+                  ref={moveableRef}
                   target={sel.length === 1 ? targets : []}
                   draggable={false}
                   resizable
