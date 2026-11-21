@@ -151,6 +151,13 @@ export interface CardGroup {
   }
 }
 
+export interface CardBack {
+  content: ExamContent
+  qmeta: Record<string, QuestionMeta>
+  bmeta: Record<string, BlockMeta>
+  hidden?: string[]
+}
+
 export interface CardDoc {
   version: 3
   meta: CardMeta
@@ -164,6 +171,8 @@ export interface CardDoc {
   groups?: CardGroup[]
   /** 自定义条形码（可多个；第一个同步到标准 content.barcode） */
   barcodes?: CardBarcode[]
+  /** 双面答题卡背面（只存本机设计文档，后端标准 v1 暂不支持双面） */
+  back?: CardBack
   /** 编辑/打印时隐藏的元素 id（不进后端，不影响识别） */
   hidden?: string[]
   updatedAt: number

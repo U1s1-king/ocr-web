@@ -3,7 +3,6 @@ import { resultsApi, type ResultItem, type ResultPage } from '../api'
 import { BRAND } from '../../lib/brand'
 import { MODULES, MODULE_GROUPS, MODULE_TONE, type ModuleIconKey } from '../../lib/modules'
 import { MODULE_ICONS } from '../../components/moduleIcons'
-import { canAccess, useAccount } from '../../lib/account'
 import { LogoMark } from '../../components/Logo'
 import { IcCamera, IcChart, IcFile, IcPlus, IcRight, IcSearch, IcUsers } from '../icons'
 import { fmtTime, useCountUp, useLoad } from '../ui'
@@ -18,7 +17,6 @@ const QUICK = [
 /** 移动端首页：功能入口页，按核心/资源/系统分组链接到各模块 */
 export default function Home() {
   const nav = useNavigate()
-  const account = useAccount()
   const results = useLoad<ResultPage>(
     () => resultsApi.listAll({ limit: 4, sortBy: ['uTime'], sortDirection: ['desc'] }),
     { items: [], total: 0, summary: { resultCount: 0, averageScore: 0, maxScore: 0 } },
@@ -98,7 +96,7 @@ export default function Home() {
               <p className="text-[9.5px] text-ink-soft/40">{group.hint}</p>
             </div>
             <div className="mhome-modules">
-              {MODULES.filter((m) => group.ids.includes(m.id) && canAccess(account.role, m.id)).map((m, i) => {
+              {MODULES.filter((m) => group.ids.includes(m.id)).map((m, i) => {
                 const Icon = MODULE_ICONS[m.icon as ModuleIconKey]
                 const tone = MODULE_TONE[m.tone]
                 return (

@@ -13,6 +13,7 @@ import { CardSheet } from '../lib/card/render'
 import { addChoiceGroup, addPresetBlock, addSubjectiveGroup, groupOf, splitGroup } from '../lib/card/components'
 import { BARCODE_FORMATS, validateBarcode } from '../lib/card/barcode'
 import { ANSWER_CARD_BARCODE_AREA } from '../lib/barcode/templates'
+import { backAsDoc, createBackDoc, withBack, type BackPreset } from '../lib/card/back'
 import {
   createPaperFromDoc,
   readLocalDoc,
@@ -61,7 +62,17 @@ export default function CardEditorPage() {
   const local = id === 'local' || !id
   const pid = Number(id)
 
-  const [doc, setDoc] = useState<CardDoc | null>(null)
+  const [frontDoc, setFrontDoc] = useState<CardDoc | null>(null)
+  const [backDoc, setBackDoc] = useState<CardDoc | null>(null)
+  const [side, setSide] = useState<'front' | 'back'>('front')
+  const doc = side === 'front' ? frontDoc : backDoc
+  const setDoc = useCallback(
+    (value: CardDoc | null | ((cur: CardDoc | null) => CardDoc | null)) => {
+      if (side === 'front') setFrontDoc(value as never)
+      else setBackDoc(value as never)
+    },
+    [side],
+  )
   const [loading, setLoading] = useState(true)
   const [loadErr, setLoadErr] = useState('')
   const [title, setTitle] = useState('')
@@ -105,7 +116,9 @@ export default function CardEditorPage() {
       if (local) {
         const d = takeStashedDoc() ?? readLocalDoc()
         if (d) {
-          setDoc(d)
+          setFrontDoc(d)
+          setBackDoc(d.back ? backAsDoc(d) : null)
+          setSide('front')
           setTitle(d.meta.title || '本地答题卡')
           setName(d.meta.title || '本地答题卡')
         } else {
@@ -123,14 +136,18 @@ export default function CardEditorPage() {
         const p = await papersApi.get(pid)
         if (!alive) return
         const resolved = resolveDoc(pid, p.paper as never, p.name)
-        setDoc(resolved.doc)
+        setFrontDoc(resolved.doc)
+        setBackDoc(resolved.doc.back ? backAsDoc(resolved.doc) : null)
+        setSide('front')
         setTitle(p.name)
         setName(p.name)
       } catch (e) {
         if (!alive) return
         const fallback = readLocalDoc()
         if (fallback) {
-          setDoc(fallback)
+          setFrontDoc(fallback)
+          setBackDoc(fallback.back ? backAsDoc(fallback) : null)
+          setSide('front')
           setTitle(fallback.meta.title || '本地答题卡')
           setLoadErr(`后端读取失败（${errorText(e)}），已打开本地草稿`)
         } else setLoadErr(errorText(e))
@@ -145,7 +162,7 @@ export default function CardEditorPage() {
   }, [pid, local])
 
   useEffect(() => {
-    if (doc) setIssues(validateCard(doc))
+    if (frontDoc) setIssues(validateCard(frontDoc))
   }, [doc])
 
   useEffect(() => {
@@ -230,6 +247,38 @@ export default function CardEditorPage() {
 
   const dims = doc ? paperMm(doc.meta.paperSize, doc.meta.orientation) : { w: 210, h: 297 }
   const pxPerMm = PX_PER_MM * zoom
+
+  function combinedDoc(): CardDoc | null {
+    if (!frontDoc) return null
+    return withBack(frontDoc, backDoc)
+  }
+
+  function switchSide(next: 'front' | 'back') {
+    if (next === 'back' && !backDoc) return
+    setSide(next)
+    setSel([])
+    setPrimary(null)
+  }
+
+  function enableBack(preset: BackPreset) {
+    if (!frontDoc) return
+    pushHistory()
+    const back = createBackDoc(frontDoc, preset)
+    setBackDoc(back)
+    setSide('back')
+    setSel([])
+    setPrimary(null)
+    setDirty(true)
+  }
+
+  function disableBack() {
+    setBackDoc(null)
+    setSide('front')
+    setSel([])
+    setPrimary(null)
+    setDirty(true)
+  }
+
 
   function findRegion(d: CardDoc, eid: string): Region | undefined {
     return (
@@ -425,7 +474,7 @@ export default function CardEditorPage() {
 
   async function save() {
     if (!doc || saving) return
-    const errors = validateCard(doc).filter((i) => i.level === 'error')
+    const errors = validateCard(frontDoc ?? doc).filter((i) => i.level === 'error')
     if (errors.length) {
       setShowIssues(true)
       toast(`还有 ${errors.length} 个问题：${errors[0].message}`, 'err')
@@ -433,11 +482,13 @@ export default function CardEditorPage() {
     }
     setSaving(true)
     try {
+      const target = combinedDoc()
+      if (!target) return
       if (local) {
-        saveLocalDoc(doc)
+        saveLocalDoc(target)
         toast('已保存到本机草稿', 'ok')
       } else {
-        await savePaperDoc(pid, doc)
+        await savePaperDoc(pid, target)
         toast(`已保存到试卷 #${pid}`, 'ok')
       }
       setDirty(false)
@@ -456,7 +507,9 @@ export default function CardEditorPage() {
     }
     setSaving(true)
     try {
-      const res = await createPaperFromDoc(doc, name.trim())
+      const target = combinedDoc()
+      if (!target) return
+      const res = await createPaperFromDoc(target, name.trim())
       toast(`已创建试卷 #${res.id}`, 'ok')
       nav(`/papers/${res.id}/edit`, { replace: true })
     } catch (e) {
@@ -869,7 +922,7 @@ export default function CardEditorPage() {
     <div>
       <PageHeader
         title="答题卡精调"
-        desc={local ? '本地草稿：拖动/框选/缩放/吸附，右侧改数值，支持撤销重做。' : `试卷 #${pid} · PS 式自由排版，保存时写回标准 v1 JSON。`}
+        desc={`${side === 'back' ? '背面' : '正面'} · ${local ? '本地草稿' : `试卷 #${pid}`} · 拖动/框选/缩放/吸附，右侧改数值。`}
         crumb={[{ label: '试卷库', to: '/papers' }, { label: local ? '本地答题卡' : `试卷 #${pid}` }]}
         extra={
           <>
@@ -890,6 +943,32 @@ export default function CardEditorPage() {
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_370px]">
         <Card className="!p-3">
           <div className="mb-2 flex flex-wrap items-center gap-1.5">
+            <div className="mr-1 flex items-center gap-1 rounded-xl border border-brand-200 bg-white p-1">
+              <button type="button" className={`rounded-lg px-2.5 py-1 text-[10.5px] font-bold ${side === 'front' ? 'bg-brand-600 text-white' : 'text-ink-soft'}`} onClick={() => switchSide('front')}>
+                正面
+              </button>
+              {backDoc && (
+                <button type="button" className={`rounded-lg px-2.5 py-1 text-[10.5px] font-bold ${side === 'back' ? 'bg-brand-600 text-white' : 'text-ink-soft'}`} onClick={() => switchSide('back')}>
+                  背面
+                </button>
+              )}
+            </div>
+            <select
+              className="rounded-lg border border-brand-200 bg-white px-1.5 py-1 text-[10.5px] font-semibold text-ink-soft"
+              value=""
+              onChange={(e) => {
+                const v = e.target.value as BackPreset | 'off' | ''
+                if (!v) return
+                if (v === 'off') disableBack()
+                else enableBack(v)
+              }}
+            >
+              <option value="">双面设置…</option>
+              <option value="blank">开启双面（空白背面）</option>
+              <option value="essay">语文 · 背面作文</option>
+              <option value="math3">数学 · 背面三栏</option>
+              {backDoc && <option value="off">关闭双面</option>}
+            </select>
             <Button variant="ghost" size="sm" onClick={undo}>
               撤销
             </Button>
@@ -1032,13 +1111,13 @@ export default function CardEditorPage() {
             </span>
             <span className="text-[10.5px] font-bold text-brand-700">已选 {sel.length}</span>
             <div className="ml-auto flex gap-1.5">
-              <Button variant="ghost" size="sm" onClick={() => { stashDoc(doc); nav('/papers/print') }}>
+              <Button variant="ghost" size="sm" onClick={() => { stashDoc(combinedDoc()!); nav('/papers/print') }}>
                 打印预览
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => downloadText(JSON.stringify({ version: 3, meta: doc.meta, content: doc.content, qmeta: doc.qmeta, bmeta: doc.bmeta, groups: doc.groups ?? [], barcodes: doc.barcodes ?? [] }, null, 2), `${title || '答题卡'}.json`)}
+                onClick={() => downloadText(JSON.stringify({ version: 3, meta: doc.meta, content: doc.content, qmeta: doc.qmeta, bmeta: doc.bmeta, groups: doc.groups ?? [], barcodes: doc.barcodes ?? [], back: backDoc ? { content: backDoc.content, qmeta: backDoc.qmeta, bmeta: backDoc.bmeta, hidden: backDoc.hidden } : undefined }, null, 2), `${title || '答题卡'}.json`)}
               >
                 <DownloadIcon className="h-3.5 w-3.5" /> 导出
               </Button>

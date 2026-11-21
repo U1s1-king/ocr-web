@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { CardSheet } from '../lib/card/render'
 import { paperMm } from '../lib/card/types'
+import { backAsDoc } from '../lib/card/back'
 import { papersApi } from '../m/api'
 import { errorText } from '../api/client'
 import { resolveDoc, takeStashedDoc } from '../lib/card/store'
@@ -52,6 +53,8 @@ export default function PaperPrintPage() {
   }, [id, query])
 
   const dims = doc ? paperMm(doc.meta.paperSize, doc.meta.orientation) : { w: 210, h: 297 }
+  const back = doc?.back ? backAsDoc(doc) : null
+  const pageDocs = doc ? (back ? [doc, back] : [doc]) : []
   const issues = doc ? validateCard(doc) : []
   const errors = issues.filter((i) => i.level === 'error')
 
@@ -66,6 +69,9 @@ export default function PaperPrintPage() {
           .pp-zoom { width: ${dims.w}mm !important; height: ${dims.h}mm !important; }
           .pp-zoom > div { transform: none !important; }
           .pp-page { box-shadow: none !important; }
+          .pp-sheet { page-break-after: always; break-after: page; margin: 0 !important; }
+          .pp-sheet:last-child { page-break-after: auto; break-after: auto; }
+          .pp-sheet > p { display: none !important; }
           .card-frame { display: none !important; }
         }
       `}</style>
@@ -80,7 +86,7 @@ export default function PaperPrintPage() {
         </button>
         <span className="text-[12.5px] font-black text-neutral-800">{name || '答题卡打印'}</span>
         <span className="rounded-md bg-neutral-100 px-2 py-1 text-[11px] font-semibold text-neutral-600">
-          {dims.w}×{dims.h}mm · {doc?.meta.paperSize} {doc?.meta.orientation === 'landscape' ? '横版' : '竖版'}
+          {dims.w}×{dims.h}mm · {doc?.meta.paperSize} {doc?.meta.orientation === 'landscape' ? '横版' : '竖版'} · {pageDocs.length > 1 ? '双面' : '单面'}
         </span>
         <select
           value={zoom}
@@ -127,20 +133,26 @@ export default function PaperPrintPage() {
         ) : !doc ? (
           <p className="py-20 text-[12px] text-neutral-500">正在生成打印页…</p>
         ) : (
-          <div
-            className="pp-zoom"
-            style={{
-              width: dims.w * PX_PER_MM * zoom,
-              height: dims.h * PX_PER_MM * zoom,
-              flex: 'none',
-            }}
-          >
-            <div style={{ width: dims.w * PX_PER_MM, height: dims.h * PX_PER_MM }}>
-              <div className="pp-page">
-                <CardSheet doc={doc} zoom={zoom} />
+          pageDocs.map((pageDoc, i) => (
+            <div
+              key={i}
+              className="pp-zoom pp-sheet"
+              style={{
+                width: dims.w * PX_PER_MM * zoom,
+                height: dims.h * PX_PER_MM * zoom,
+                flex: 'none',
+              }}
+            >
+              <div style={{ width: dims.w * PX_PER_MM, height: dims.h * PX_PER_MM }}>
+                <div className="pp-page">
+                  <CardSheet doc={pageDoc} zoom={zoom} />
+                </div>
               </div>
+              <p className="mt-1 text-center text-[10px] font-bold text-neutral-500">
+                {pageDocs.length > 1 ? (i === 0 ? '正面' : '背面') : ''}
+              </p>
             </div>
-          </div>
+          ))
         )}
       </div>
     </div>

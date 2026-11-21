@@ -3,7 +3,8 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { ChevronRightIcon, CloseIcon, MenuIcon, ScanIcon } from './icons'
 import { Logo } from './Logo'
 import { AccountDialog } from './AccountDialog'
-import { canAccess, roleLabel, useAccount } from '../lib/account'
+import { useAccount } from '../lib/account'
+import { ACCOUNT_AVATAR_IDB, hydrateAccountAvatar, resolveAccountAvatar } from '../lib/accountAvatar'
 import { BRAND } from '../lib/brand'
 import { MODULES, MODULE_GROUPS, type ModuleDef } from '../lib/modules'
 import type { ModuleIconKey } from '../lib/modules'
@@ -75,7 +76,17 @@ export function Layout() {
   const visual = useVisualPrefs()
   const account = useAccount()
   const [accountOpen, setAccountOpen] = useState(false)
-  const visibleModules = MODULES.filter((m) => canAccess(account.role, m.id))
+  const [avatarUrl, setAvatarUrl] = useState('')
+
+  useEffect(() => {
+    let alive = true
+    if (account.avatar === ACCOUNT_AVATAR_IDB) {
+      void hydrateAccountAvatar().then((url) => { if (alive) setAvatarUrl(url) })
+    } else {
+      setAvatarUrl(resolveAccountAvatar(account.avatar))
+    }
+    return () => { alive = false }
+  }, [account])
 
   useEffect(() => {
     setDrawer(false)
@@ -179,7 +190,7 @@ export function Layout() {
           {MODULE_GROUPS.map((group) => (
             <div key={group.id} className="pt-2 first:pt-0">
               <p className="px-3 pb-1 text-[9px] font-bold tracking-[0.16em] text-ink-soft/40">{group.label}</p>
-              {visibleModules.filter((m) => group.ids.includes(m.id)).map((m) => renderModule(m, m.id === activeId, false))}
+              {MODULES.filter((m) => group.ids.includes(m.id)).map((m) => renderModule(m, m.id === activeId, false))}
             </div>
           ))}
         </nav>
@@ -187,14 +198,11 @@ export function Layout() {
         <div className="px-4 pb-4">
           <button type="button" className="sidebar-account" onClick={() => setAccountOpen(true)}>
             <span className="sidebar-account-avatar">
-              {account.avatar ? <img src={account.avatar} alt="" /> : (account.name || '?').slice(0, 1).toUpperCase()}
+              {avatarUrl ? <img src={avatarUrl} alt="" /> : (account.name || '?').slice(0, 1).toUpperCase()}
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[11.5px] font-bold text-ink">{account.name}</span>
-              <span className="mt-0.5 flex items-center gap-1 text-[9.5px] text-ink-soft/60">
-                <span className="rounded bg-brand-50 px-1 py-0.5 text-[8.5px] font-bold text-brand-700">本地模拟</span>
-                {roleLabel(account.role)}
-              </span>
+              <span className="mt-0.5 block text-[9.5px] text-ink-soft/55">本地账号</span>
             </span>
             <span className="text-[9px] text-ink-soft/40">编辑</span>
           </button>
@@ -269,7 +277,7 @@ export function Layout() {
               {MODULE_GROUPS.map((group) => (
                 <div key={group.id} className="pt-2 first:pt-0">
                   <p className="px-3 pb-1 text-[9px] font-bold tracking-[0.16em] text-ink-soft/40">{group.label}</p>
-                  {visibleModules.filter((m) => group.ids.includes(m.id)).map((m) => renderModule(m, m.id === activeId, true))}
+                  {MODULES.filter((m) => group.ids.includes(m.id)).map((m) => renderModule(m, m.id === activeId, true))}
                 </div>
               ))}
             </nav>
