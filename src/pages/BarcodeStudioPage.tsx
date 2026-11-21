@@ -105,7 +105,7 @@ function fieldValue(field: BarcodeField, person: BarcodePerson): string {
 export default function BarcodeStudioPage() {
   const nav = useNavigate()
   const [design, setDesign] = useState<BarcodeDesign>(readDesign)
-  const [presetId, setPresetId] = useState('exam-75x28')
+  const [presetId, setPresetId] = useState(LABEL_PRESETS[0].id)
   const [selected, setSelected] = useState<string | null>(null)
   const [people, setPeople] = useState<BarcodePerson[]>([])
   const [peopleSource, setPeopleSource] = useState<'students' | 'import' | 'sample'>('students')

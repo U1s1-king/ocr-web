@@ -35,7 +35,7 @@ export interface BarcodePerson {
 }
 
 export const FIELD_LABELS: Record<BarcodeFieldKey, string> = {
-  school: '学校',
+  school: '学校/考点',
   name: '姓名',
   seat: '座号',
   room: '考场号',
@@ -46,7 +46,7 @@ export const FIELD_LABELS: Record<BarcodeFieldKey, string> = {
 }
 
 export const FIELD_PLACEHOLDER: Record<BarcodeFieldKey, string> = {
-  school: 'XX中学',
+  school: 'XX中学/考点',
   name: '张三',
   seat: '01',
   room: '101',
@@ -57,7 +57,7 @@ export const FIELD_PLACEHOLDER: Record<BarcodeFieldKey, string> = {
 }
 
 export const DEFAULT_PERSON: BarcodePerson = {
-  school: 'XX中学',
+  school: 'XX中学/考点',
   name: '张三',
   seat: '01',
   room: '101',
@@ -87,21 +87,62 @@ export interface LabelPreset {
 }
 
 export const LABEL_PRESETS: LabelPreset[] = [
-  { id: 'exam-75x28', name: '考试标签 75×28.5', width: 75, height: 28.5, desc: '学校、条码、姓名、座号、考场号都有空间' },
-  { id: 'exam-50x20', name: '答题卡贴条 50×20', width: 50, height: 20, desc: '和答题卡贴条区一致' },
-  { id: 'exam-60x25', name: '考试标签 60×25', width: 60, height: 25, desc: '中等尺寸，适合大多数标签纸' },
-  { id: 'exam-40x25', name: '考试标签 40×25', width: 40, height: 25, desc: '窄标签，适合小标签纸' },
-  { id: 'custom', name: '自定义尺寸', width: 70, height: 30, desc: '自由设置标签宽高和字段' },
+  { id: 'gaokao-40x30', name: '高考考试专用条码 40×30', width: 40, height: 30, desc: '参考高考考试专用标签：条码居中，学校/考点、姓名、座号、考场号分列' },
+  { id: 'exam-50x25', name: '考试条码标签 50×25', width: 50, height: 25, desc: '常见考试条码纸：条码上方学校，下方姓名/座号/考场' },
+  { id: 'card-50x20', name: '答题卡贴条 50×20', width: 50, height: 20, desc: '和答题卡「贴条形码区」50×20mm 对齐' },
+  { id: 'exam-75x28', name: '宽标签 75×28.5', width: 75, height: 28.5, desc: '信息量大，适合学校名较长或需要更多自定义文字' },
+  { id: 'custom', name: '自定义尺寸', width: 60, height: 25, desc: '自由设置标签宽高和字段，可继续拖拽调整' },
 ]
 
+function gaokaoFields(w: number, h: number): BarcodeField[] {
+  const fs = h >= 28 ? 2.4 : 2.1
+  return [
+    { id: 'f-school', key: 'school', x: 1.5, y: 1, w: w - 3, h: 3, fontSize: fs, bold: true, align: 'center' },
+    { id: 'f-barcode', key: 'barcode', x: w * 0.1, y: 4.2, w: w * 0.8, h: h * 0.42, fontSize: fs, align: 'center' },
+    { id: 'f-name', key: 'name', x: 1.5, y: h * 0.63, w: w * 0.34, h: 3.2, fontSize: fs, bold: true, align: 'left' },
+    { id: 'f-seat', key: 'seat', x: w * 0.37, y: h * 0.63, w: w * 0.25, h: 3.2, fontSize: fs, align: 'center' },
+    { id: 'f-room', key: 'room', x: w * 0.63, y: h * 0.63, w: w * 0.35, h: 3.2, fontSize: fs, align: 'right' },
+    { id: 'f-candidate', key: 'candidateNumber', x: 1.5, y: h * 0.82, w: w - 3, h: 2.8, fontSize: fs - 0.2, align: 'center' },
+  ]
+}
+
+function examFields(w: number, h: number): BarcodeField[] {
+  const fs = h >= 24 ? 2.3 : 2
+  return [
+    { id: 'f-school', key: 'school', x: 1.5, y: 1, w: w - 3, h: 2.8, fontSize: fs, bold: true, align: 'center' },
+    { id: 'f-barcode', key: 'barcode', x: w * 0.12, y: 4, w: w * 0.76, h: h * 0.44, fontSize: fs, align: 'center' },
+    { id: 'f-name', key: 'name', x: 1.5, y: h * 0.62, w: w * 0.38, h: 3.2, fontSize: fs + 0.2, bold: true, align: 'left' },
+    { id: 'f-seat', key: 'seat', x: w * 0.4, y: h * 0.62, w: w * 0.26, h: 3.2, fontSize: fs, align: 'center' },
+    { id: 'f-room', key: 'room', x: w * 0.67, y: h * 0.62, w: w * 0.31, h: 3.2, fontSize: fs, align: 'right' },
+    { id: 'f-candidate', key: 'candidateNumber', x: 1.5, y: h * 0.82, w: w - 3, h: 2.8, fontSize: fs - 0.2, align: 'center' },
+  ]
+}
+
+function cardFields(w: number, h: number): BarcodeField[] {
+  const fs = 1.9
+  return [
+    { id: 'f-school', key: 'school', x: 1.5, y: 1, w: w - 3, h: 2.6, fontSize: fs, bold: true, align: 'center' },
+    { id: 'f-barcode', key: 'barcode', x: w * 0.1, y: 3.8, w: w * 0.8, h: h * 0.47, fontSize: fs, align: 'center' },
+    { id: 'f-name', key: 'name', x: 1.5, y: h * 0.68, w: w * 0.4, h: 2.8, fontSize: fs, bold: true, align: 'left' },
+    { id: 'f-seat', key: 'seat', x: w * 0.42, y: h * 0.68, w: w * 0.25, h: 2.8, fontSize: fs, align: 'center' },
+    { id: 'f-room', key: 'room', x: w * 0.68, y: h * 0.68, w: w * 0.3, h: 2.8, fontSize: fs, align: 'right' },
+    { id: 'f-candidate', key: 'candidateNumber', x: 1.5, y: h * 0.84, w: w - 3, h: 2.4, fontSize: fs - 0.2, align: 'center' },
+  ]
+}
+
 export function designForPreset(preset: LabelPreset): BarcodeDesign {
+  let fields: BarcodeField[]
+  if (preset.id === 'gaokao-40x30') fields = gaokaoFields(preset.width, preset.height)
+  else if (preset.id === 'exam-50x25') fields = examFields(preset.width, preset.height)
+  else if (preset.id === 'card-50x20') fields = cardFields(preset.width, preset.height)
+  else fields = makeFields(preset.width, preset.height)
   return {
     width: preset.width,
     height: preset.height,
     pad: 1,
     format: 'CODE128',
     showText: false,
-    fields: makeFields(preset.width, preset.height),
+    fields,
   }
 }
 

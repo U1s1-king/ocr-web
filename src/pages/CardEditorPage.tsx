@@ -13,8 +13,9 @@ import { CardSheet } from '../lib/card/render'
 import { addChoiceGroup, addPresetBlock, addSubjectiveGroup, groupOf, splitGroup } from '../lib/card/components'
 import { BARCODE_FORMATS, validateBarcode } from '../lib/card/barcode'
 import { ANSWER_CARD_BARCODE_AREA } from '../lib/barcode/templates'
-import { backAsDoc, createBackDoc, withBack, type BackPreset } from '../lib/card/back'
-import { autoInsertGroup, paginateOverflow } from '../lib/card/autoLayout'
+import { backAsDoc, withBack, type BackPreset } from '../lib/card/back'
+import { autoInsertGroup } from '../lib/card/autoLayout'
+import { reflowTwoPages } from '../lib/card/reflow'
 import {
   createPaperFromDoc,
   readLocalDoc,
@@ -265,9 +266,9 @@ export default function CardEditorPage() {
   function enableBack(preset: BackPreset) {
     if (!frontDoc) return
     pushHistory()
-    const blank = createBackDoc(frontDoc, preset)
-    // 双面 = 同一张答题卡的两页：先把正面放不下的内容自动分到背面
-    const result = paginateOverflow(frontDoc, blank)
+    void preset
+    // 强制两页排版：把同一张答题卡的内容重新分配到正反两面
+    const result = reflowTwoPages(frontDoc)
     setFrontDoc(result.front)
     setBackDoc(result.back)
     setSide('front')
@@ -288,14 +289,13 @@ export default function CardEditorPage() {
   function repage() {
     if (!frontDoc) return
     pushHistory()
-    const base = backDoc ?? createBackDoc(frontDoc, 'blank')
-    const result = paginateOverflow(frontDoc, base)
+    const result = reflowTwoPages(frontDoc)
     setFrontDoc(result.front)
     setBackDoc(result.back)
     setDirty(true)
     setSel([])
     setPrimary(null)
-    toast(result.overflow ? '内容超过两面，请减少题量或换 A3' : '已按内容重新分页', result.overflow ? 'err' : 'ok')
+    toast(result.overflow ? '内容超过两面，请减少题量或换 A3' : '已强制重新分为两页', result.overflow ? 'err' : 'ok')
   }
 
 
@@ -655,6 +655,18 @@ export default function CardEditorPage() {
     pushHistory()
     // 题目组自动排版：选择题插到选择题末尾，主观题顺延，放不下自动移到背面
     if (side === 'front' && frontDoc && ['choice', 'subjective', 'blank'].includes(result.group.kind)) {
+      if (backDoc) {
+        // 双面模式：强制按两页重新排版，不再只做局部下移
+        const re = reflowTwoPages(result.doc)
+        setFrontDoc(re.front)
+        setBackDoc(re.back)
+        setSide('front')
+        setDirty(true)
+        setSel(result.group.itemIds)
+        setPrimary(result.group.itemIds[0] ?? null)
+        toast(re.overflow ? '两页也放不下了，请减少题量或换 A3 纸张' : `已添加${result.group.name}，已强制重新分为两页`, re.overflow ? 'err' : 'ok')
+        return
+      }
       const auto = autoInsertGroup(frontDoc, result.doc, backDoc, result.group)
       setFrontDoc(auto.front)
       setBackDoc(auto.back)
@@ -662,8 +674,7 @@ export default function CardEditorPage() {
       setDirty(true)
       setSel(result.group.itemIds)
       setPrimary(result.group.itemIds[0] ?? null)
-      if (auto.overflow) toast('背面也排满了，请减少题量或换 A3 纸张', 'err')
-      else toast(`已添加${result.group.name}，已自动重排`, 'ok')
+      toast(`已添加${result.group.name}，已自动排版`, 'ok')
       return
     }
     setDoc(result.doc)
