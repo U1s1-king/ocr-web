@@ -275,7 +275,7 @@ export default function CardEditorPage() {
     setSel([])
     setPrimary(null)
     setDirty(true)
-    toast('已开启双面，超出正面的内容已自动分页', 'ok')
+    toast(`已开启双面：${result.profile.label}`, 'ok')
   }
 
   function disableBack() {
@@ -295,7 +295,7 @@ export default function CardEditorPage() {
     setDirty(true)
     setSel([])
     setPrimary(null)
-    toast(result.overflow ? '内容超过两面，请减少题量或换 A3' : '已强制重新分为两页', result.overflow ? 'err' : 'ok')
+    toast(result.overflow ? '内容超过两面，请减少题量或换 A3' : `已按${result.profile.label}重新分为两页`, result.overflow ? 'err' : 'ok')
   }
 
 

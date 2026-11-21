@@ -17,6 +17,13 @@ interface FlowItem {
   block?: Block
 }
 
+interface PageProfile {
+  frontCols: number
+  backCols: number
+  /** 用于在 UI/日志里说明当前使用的科目版式 */
+  label: string
+}
+
 function clone<T>(v: T): T {
   return JSON.parse(JSON.stringify(v)) as T
 }
@@ -33,13 +40,33 @@ function splitGroups(doc: CardDoc, frontIds: Set<string>, backIds: Set<string>):
   return { front, back }
 }
 
-/**
- * 强制两页自动分页：
- * 把一张答题卡的全部题目/题区按顺序重新排版，正面放不下的内容强制顺延到背面。
- * 表头（标题、姓名、准考证号、条形码、注意事项）固定在正面顶部。
- */
-export function reflowTwoPages(front: CardDoc, existingBack?: CardDoc | null): { front: CardDoc; back: CardDoc; overflow: boolean } {
+/** 科目感知：不同科目使用不同的正面/背面栏数 */
+export function pageProfileOf(front: CardDoc): PageProfile {
   const page = paperMm(front.meta.paperSize, front.meta.orientation)
+  const subject = `${front.meta.subject ?? ''} ${front.meta.templateName ?? ''}`.toLowerCase()
+  const wide = page.w >= 380
+  const essay = /语文|chinese/.test(subject)
+  const english = /英语|english/.test(subject)
+  const science = /数学|math|物理|physics|化学|chemistry|生物|biology/.test(subject)
+  if (essay) return { frontCols: wide ? 2 : 1, backCols: 1, label: '语文 · 背面作文' }
+  if (english) return { frontCols: wide ? 2 : 1, backCols: 1, label: '英语 · 背面写作' }
+  if (science) return { frontCols: wide ? 2 : 1, backCols: 3, label: '数学/理科 · 背面三栏' }
+  return { frontCols: wide ? 2 : 1, backCols: 2, label: '文科 · 背面两栏' }
+}
+
+/**
+ * 科目感知的强制两页自动排版：
+ * - 表头固定在正面顶部
+ * - 选择题按网格排列
+ * - 主观题按科目列数进入列流；正面列满后强制进入背面
+ * - 背面按科目使用作文单栏、理科三栏、文科两栏
+ */
+export function reflowTwoPages(
+  front: CardDoc,
+  existingBack?: CardDoc | null,
+): { front: CardDoc; back: CardDoc; overflow: boolean; profile: PageProfile } {
+  const page = paperMm(front.meta.paperSize, front.meta.orientation)
+  const profile = pageProfileOf(front)
   const questions = front.content.questions ?? []
   const blocks = front.content.blocks ?? []
   const backQuestions = existingBack?.content.questions ?? []
@@ -56,7 +83,6 @@ export function reflowTwoPages(front: CardDoc, existingBack?: CardDoc | null): {
   const flowItems: FlowItem[] = [
     ...flowBlocks.map((b) => ({ id: b.id, kind: 'block' as const, y: u2mm(b.region.y), h: u2mm(b.region.height), w: u2mm(b.region.width), block: b })),
     ...questions.map((q) => ({ id: q.id, kind: 'question' as const, y: u2mm(q.region.y), h: u2mm(q.region.height), w: u2mm(q.region.width), question: q })),
-    // 背面内容排在正面之后，参与同一套两页重排
     ...backBlocks.map((b) => ({ id: b.id, kind: 'block' as const, y: 10000 + u2mm(b.region.y), h: u2mm(b.region.height), w: u2mm(b.region.width), block: b })),
     ...backQuestions.map((q) => ({ id: q.id, kind: 'question' as const, y: 10000 + u2mm(q.region.y), h: u2mm(q.region.height), w: u2mm(q.region.width), question: q })),
   ].sort((a, b) => a.y - b.y || a.w - b.w)
@@ -70,13 +96,7 @@ export function reflowTwoPages(front: CardDoc, existingBack?: CardDoc | null): {
 
   let pageNo: 1 | 2 = 1
   let cursorY = headerBottom + 4
-  let row: FlowItem[] = []
-  let rowH = 0
-  let overflow = false
-
   const contentW = page.w - MARGIN_X * 2
-  const markCols = Math.max(2, Math.min(8, Math.floor((contentW + GAP) / 32)))
-  const markW = (contentW - (markCols - 1) * GAP) / markCols
   const limit = page.h - MARGIN_BOTTOM
 
   function pushQuestion(q: Question) {
@@ -101,13 +121,32 @@ export function reflowTwoPages(front: CardDoc, existingBack?: CardDoc | null): {
     if (pageNo === 1) {
       pageNo = 2
       cursorY = MARGIN_TOP
-    } else {
-      overflow = true
     }
   }
+  function colsNow(): number {
+    return pageNo === 1 ? profile.frontCols : profile.backCols
+  }
+  function colW(cols: number): number {
+    return (contentW - (cols - 1) * GAP) / cols
+  }
+  function colX(index: number, cols: number): number {
+    return MARGIN_X + index * (colW(cols) + GAP)
+  }
+
+  // 1) 选择题排成网格
+  const marks = flowItems.filter((it) => it.kind === 'question' && it.question!.type !== 'subjective')
+  const others = flowItems.filter((it) => it.kind === 'block' || (it.kind === 'question' && it.question!.type === 'subjective'))
+  const markCols = Math.max(2, Math.min(8, Math.floor((contentW + GAP) / 32)))
+  const markW = (contentW - (markCols - 1) * GAP) / markCols
+  let row: FlowItem[] = []
+  let rowH = 0
+
   function flushRow() {
     if (!row.length) return
-    if (cursorY + rowH > limit) newPage()
+    if (cursorY + rowH > limit) {
+      newPage()
+      cursorY = MARGIN_TOP
+    }
     row.forEach((it, i) => {
       const q = it.question!
       q.region.x = mm2u(round2(MARGIN_X + i * (markW + GAP)))
@@ -120,38 +159,65 @@ export function reflowTwoPages(front: CardDoc, existingBack?: CardDoc | null): {
     row = []
     rowH = 0
   }
+  for (const item of marks) {
+    if (row.length >= markCols) flushRow()
+    if (cursorY + Math.max(rowH, item.h) > limit) flushRow()
+    row.push(item)
+    rowH = Math.max(rowH, item.h)
+  }
+  flushRow()
 
-  for (const item of flowItems) {
-    if (item.kind === 'question' && item.question!.type !== 'subjective') {
-      if (row.length >= markCols) flushRow()
-      row.push(item)
-      rowH = Math.max(rowH, item.h)
-      continue
+  // 2) 主观题 / 题块按科目列流
+  let col = 0
+  let colY = pageNo === 1 ? cursorY : MARGIN_TOP
+  const frontColStart = cursorY
+
+  // 先估算两页可用高度；内容超出时统一压缩题区高度，强制塞进两页
+  const needed = others.reduce((sum, it) => sum + it.h + 2.4, 0)
+  const avail1 = Math.max(0, limit - frontColStart) * profile.frontCols
+  const avail2 = Math.max(0, limit - MARGIN_TOP) * profile.backCols
+  const fit = needed > 0 ? Math.min(1, ((avail1 + avail2) * 0.96) / needed) : 1
+  if (fit < 1) {
+    for (const it of others) it.h = Math.max(4, it.h * fit)
+  }
+
+  function advanceColumn(h: number) {
+    let cols = colsNow()
+    if (colY + h <= limit) return
+    col += 1
+    colY = pageNo === 1 ? frontColStart : MARGIN_TOP
+    cols = colsNow()
+    if (col >= cols) {
+      newPage()
+      col = 0
+      colY = MARGIN_TOP
     }
-    flushRow()
-    const isSubjective = item.kind === 'question' && item.question!.type === 'subjective'
-    const h = Math.min(item.h, page.h - MARGIN_TOP - MARGIN_BOTTOM)
-    if (cursorY + h > limit) newPage()
+  }
+
+  for (const item of others) {
+    let h = Math.min(item.h, limit - MARGIN_TOP)
+    advanceColumn(h)
+    const cols = colsNow()
+    const cw = colW(cols)
     if (item.kind === 'question') {
       const q = item.question!
-      q.region.x = mm2u(MARGIN_X)
-      q.region.y = mm2u(round2(cursorY))
-      q.region.width = mm2u(round2(contentW))
+      q.region.x = mm2u(round2(colX(col, cols)))
+      q.region.y = mm2u(round2(colY))
+      q.region.width = mm2u(round2(cw))
       q.region.height = mm2u(round2(h))
       pushQuestion(q)
     } else {
       const b = item.block!
-      b.region.x = mm2u(MARGIN_X)
-      b.region.y = mm2u(round2(cursorY))
-      b.region.width = mm2u(round2(contentW))
+      b.region.x = mm2u(round2(colX(col, cols)))
+      b.region.y = mm2u(round2(colY))
+      b.region.width = mm2u(round2(cw))
       b.region.height = mm2u(round2(h))
       pushBlock(b)
     }
-    cursorY += h + (isSubjective ? 2.5 : GAP)
+    colY += h + 2.4
   }
-  flushRow()
 
-  // 表头固定在正面；页脚放最后一页底部
+  // 3) 组装正面/背面
   const nextFront = clone(front)
   const nextBack = createBackDoc(front, 'blank')
   nextFront.content.questions = page1Questions
@@ -160,7 +226,6 @@ export function reflowTwoPages(front: CardDoc, existingBack?: CardDoc | null): {
   nextBack.content.questions = page2Questions
   nextBack.content.blocks = page2Blocks
 
-  // 头部的自定义条形码固定在正面；其余数据不重复
   if (page2Questions.length || page2Blocks.length) {
     for (const footer of footerBlocks) {
       const f = clone(footer)
@@ -183,10 +248,25 @@ export function reflowTwoPages(front: CardDoc, existingBack?: CardDoc | null): {
   nextFront.bmeta = allBmeta
   nextBack.bmeta = allBmeta
 
-  // 正面标记/画布沿用；背面使用同一套定位标记
-  const backBottom = [...(nextBack.content.questions ?? []), ...(nextBack.content.blocks ?? [])].reduce(
+  let backBottom = [...(nextBack.content.questions ?? []), ...(nextBack.content.blocks ?? [])].reduce(
     (m, x) => Math.max(m, u2mm(x.region.y) + u2mm(x.region.height)),
     0,
   )
-  return { front: nextFront, back: nextBack, overflow: overflow || backBottom > page.h }
+  // 第二页若略超页，自动压缩题区高度，保证内容优先落在两页内
+  if (backBottom > page.h) {
+    const items = [...(nextBack.content.questions ?? []), ...(nextBack.content.blocks ?? [])]
+    const maxBottom = page.h - MARGIN_BOTTOM
+    const minTop = Math.min(MARGIN_TOP, ...items.map((x) => u2mm(x.region.y)))
+    const usable = maxBottom - minTop
+    const current = backBottom - minTop
+    const scale = current > 0 ? Math.max(0.45, usable / current) : 1
+    if (scale < 1) {
+      for (const x of items) {
+        const r = x.region
+        r.height = mm2u(round2(Math.max(4, u2mm(r.height) * scale)))
+      }
+      backBottom = items.reduce((m, x) => Math.max(m, u2mm(x.region.y) + u2mm(x.region.height)), 0)
+    }
+  }
+  return { front: nextFront, back: nextBack, overflow: backBottom > page.h + 2, profile }
 }
