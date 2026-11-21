@@ -28,3 +28,6 @@ assets/brand/*.psd
 
 # Cloudflare Tunnel 令牌（不入库）
 deploy/tunnel/tunnel_token.txt
+
+# 生成的答题卡模板打包目录
+答题卡模板-JSON-*/

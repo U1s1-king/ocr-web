@@ -10,6 +10,7 @@ import { errorText } from '../api/client'
 import { papersApi } from '../m/api'
 import type { Block, Question, Region } from '../api/types'
 import { CardSheet } from '../lib/card/render'
+import { addChoiceGroup, addPresetBlock, addSubjectiveGroup, groupOf, splitGroup } from '../lib/card/components'
 import {
   createPaperFromDoc,
   readLocalDoc,
@@ -22,6 +23,7 @@ import {
 import {
   cloneDoc,
   mm2u,
+  type CardGroup,
   paperMm,
   u2mm,
   validateCard,
@@ -71,6 +73,15 @@ export default function CardEditorPage() {
   const [targets, setTargets] = useState<HTMLElement[]>([])
   const [guidelines, setGuidelines] = useState<HTMLElement[]>([])
   const [layerOpen, setLayerOpen] = useState(true)
+  const [choiceCount, setChoiceCount] = useState(10)
+  const [choiceOpts, setChoiceOpts] = useState(4)
+  const [choiceScore, setChoiceScore] = useState(2)
+  const [subjCount, setSubjCount] = useState(3)
+  const [subjRows, setSubjRows] = useState(6)
+  const [subjStyle, setSubjStyle] = useState<'lines' | 'blank' | 'grid'>('lines')
+  const [subjScore, setSubjScore] = useState(10)
+  const [blankCount, setBlankCount] = useState(2)
+  const [blankHeight, setBlankHeight] = useState(30)
 
   const past = useRef<CardDoc[]>([])
   const future = useRef<CardDoc[]>([])
@@ -263,8 +274,8 @@ export default function CardEditorPage() {
   }
   function onResize(e: any) {
     e.target.style.transform = e.transform
-    e.target.style.width = `${e.width}px`
-    e.target.style.height = `${e.height}px`
+    e.target.style.width = `${e.width / zoom}px`
+    e.target.style.height = `${e.height / zoom}px`
     remember(e, { dx: e.drag.beforeTranslate[0], dy: e.drag.beforeTranslate[1], w: e.width, h: e.height })
   }
   function onResizeGroupStart(e: any) {
@@ -276,8 +287,8 @@ export default function CardEditorPage() {
   function onResizeGroup(e: any) {
     e.events.forEach((ev: any) => {
       ev.target.style.transform = ev.transform
-      ev.target.style.width = `${ev.width}px`
-      ev.target.style.height = `${ev.height}px`
+      ev.target.style.width = `${ev.width / zoom}px`
+      ev.target.style.height = `${ev.height / zoom}px`
       remember(ev, { dx: ev.drag.beforeTranslate[0], dy: ev.drag.beforeTranslate[1], w: ev.width, h: ev.height })
     })
   }
@@ -448,6 +459,9 @@ export default function CardEditorPage() {
       delete next.bmeta[eid]
       if (next.content.answerKey) delete next.content.answerKey[eid]
     }
+    next.groups = (next.groups ?? [])
+      .map((g) => ({ ...g, itemIds: g.itemIds.filter((x) => !sel.includes(x)) }))
+      .filter((g) => g.itemIds.length > 0)
     setDoc(next)
     setDirty(true)
     setSel([])
@@ -545,6 +559,69 @@ export default function CardEditorPage() {
     setPrimary(id2)
   }
 
+  function applyGenerated(result: { doc: CardDoc; group: CardGroup }) {
+    pushHistory()
+    setDoc(result.doc)
+    setDirty(true)
+    setSel(result.group.itemIds)
+    setPrimary(result.group.itemIds[0] ?? null)
+    const page = paperMm(result.doc.meta.paperSize, result.doc.meta.orientation)
+    const maxY = Math.max(
+      0,
+      ...result.doc.content.questions.map((q) => (q.region.y + q.region.height) * 0.7),
+      ...(result.doc.content.blocks ?? []).map((b) => (b.region.y + b.region.height) * 0.7),
+    )
+    if (maxY > page.h) toast(`新组件已超出纸张 ${Math.round(maxY - page.h)}mm，请拖动或缩短行数`, 'err')
+    else toast(`已添加${result.group.name}`, 'ok')
+  }
+
+  function addChoice() {
+    if (!doc) return
+    applyGenerated(addChoiceGroup(doc, { count: choiceCount, options: choiceOpts, score: choiceScore }))
+  }
+
+  function addSubjective() {
+    if (!doc) return
+    applyGenerated(addSubjectiveGroup(doc, { count: subjCount, rows: subjRows, style: subjStyle, score: subjScore }))
+  }
+
+  function addBlank() {
+    if (!doc) return
+    applyGenerated(addSubjectiveGroup(doc, { count: blankCount, style: 'blank', heightMm: blankHeight, score: subjScore }))
+  }
+
+  function addPreset(kind: 'text' | 'title' | 'section' | 'divider' | 'notice' | 'student' | 'barcode' | 'header' | 'footer') {
+    if (!doc) return
+    applyGenerated(addPresetBlock(doc, kind))
+  }
+
+
+
+  function selectGroup(group: CardGroup) {
+    setSel(group.itemIds)
+    setPrimary(group.itemIds[0] ?? null)
+  }
+
+  function removeGroupById(gid: string) {
+    if (!doc) return
+    const group = (doc.groups ?? []).find((g) => g.id === gid)
+    if (!group) return
+    pushHistory()
+    const next = cloneDoc(doc)
+    const ids = new Set(group.itemIds)
+    next.content.questions = next.content.questions.filter((q) => !ids.has(q.id))
+    next.content.blocks = (next.content.blocks ?? []).filter((b) => !ids.has(b.id))
+    for (const id of ids) {
+      delete next.qmeta[id]
+      delete next.bmeta[id]
+    }
+    next.groups = (next.groups ?? []).filter((g) => g.id !== gid)
+    setDoc(next)
+    setDirty(true)
+    setSel([])
+    setPrimary(null)
+  }
+
   function patchSelected(patch: {
     region?: Partial<Region>
     q?: Partial<Question>
@@ -596,7 +673,7 @@ export default function CardEditorPage() {
       const dx = ev.clientX - sx
       const dy = ev.clientY - sy
       for (const eid of ids) live.current.set(eid, { dx, dy })
-      for (const el of els) el.style.transform = `translate(${dx}px, ${dy}px)`
+      for (const el of els) el.style.transform = `translate(${dx / zoom}px, ${dy / zoom}px)`
     }
     const onUp = () => {
       window.removeEventListener('pointermove', onMove, true)
@@ -652,6 +729,25 @@ export default function CardEditorPage() {
     setDirty(true)
   }
 
+  function toggleGroupHidden(group: CardGroup) {
+    if (!doc) return
+    const hidden = new Set(doc.hidden ?? [])
+    const allHidden = group.itemIds.every((id) => hidden.has(id))
+    for (const id of group.itemIds) {
+      if (allHidden) hidden.delete(id)
+      else hidden.add(id)
+    }
+    setDoc({ ...cloneDoc(doc), hidden: [...hidden] })
+    setDirty(true)
+  }
+
+  function splitGroupById(gid: string) {
+    if (!doc) return
+    pushHistory()
+    setDoc(splitGroup(doc, gid))
+    setDirty(true)
+  }
+
   const primaryQ = primary ? doc?.content.questions.find((q) => q.id === primary) : undefined
   const primaryB = primary ? (doc?.content.blocks ?? []).find((b) => b.id === primary) : undefined
   const primaryRegion = primaryQ?.region ?? primaryB?.region ?? null
@@ -691,6 +787,9 @@ export default function CardEditorPage() {
     })),
   ]
   const hiddenSet = new Set(doc.hidden ?? [])
+  const selectedGroup = (doc.groups ?? []).find((g) => g.itemIds.some((id) => sel.includes(id)))
+  const groupedIds = new Set((doc.groups ?? []).flatMap((g) => g.itemIds))
+  const looseItems = allItems.filter((it) => !groupedIds.has(it.id))
 
   return (
     <div>
@@ -793,9 +892,11 @@ export default function CardEditorPage() {
                             setPrimary(it.id)
                             return
                           }
-                          const ids = sel.includes(it.id) && sel.length > 1 ? sel : [it.id]
+                          const grp = groupOf(doc, it.id)
+                          const pickIds = grp ? grp.itemIds : [it.id]
+                          const ids = sel.includes(it.id) && sel.length > 1 ? sel : pickIds
                           if (!sel.includes(it.id)) {
-                            setSel([it.id])
+                            setSel(pickIds)
                             setPrimary(it.id)
                           } else if (sel.length === 1) {
                             setPrimary(it.id)
@@ -863,7 +964,7 @@ export default function CardEditorPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => downloadText(JSON.stringify({ meta: doc.meta, content: doc.content }, null, 2), `${title || '答题卡'}.json`)}
+                onClick={() => downloadText(JSON.stringify({ version: 3, meta: doc.meta, content: doc.content, qmeta: doc.qmeta, bmeta: doc.bmeta, groups: doc.groups ?? [] }, null, 2), `${title || '答题卡'}.json`)}
               >
                 <DownloadIcon className="h-3.5 w-3.5" /> 导出
               </Button>
@@ -875,6 +976,99 @@ export default function CardEditorPage() {
         </Card>
 
         <div className="space-y-3">
+          <Card className="!p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-[12px] font-black text-ink">组件库</p>
+              <span className="text-[10px] font-semibold text-ink-soft/60">点击添加 · 自动向下排版</span>
+            </div>
+
+            <div className="mt-3 space-y-3">
+              <div className="rounded-xl border border-brand-100 bg-brand-50/40 p-2.5">
+                <p className="text-[11px] font-bold text-ink">选择题组</p>
+                <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+                  <Field label="题数">
+                    <input type="number" min={1} max={100} className="w-full rounded-lg border border-brand-200 px-1.5 py-1 text-[11.5px]" value={choiceCount} onChange={(e) => setChoiceCount(Number(e.target.value))} />
+                  </Field>
+                  <Field label="选项数">
+                    <input type="number" min={2} max={8} className="w-full rounded-lg border border-brand-200 px-1.5 py-1 text-[11.5px]" value={choiceOpts} onChange={(e) => setChoiceOpts(Number(e.target.value))} />
+                  </Field>
+                  <Field label="每题分">
+                    <input type="number" min={0.5} step={0.5} className="w-full rounded-lg border border-brand-200 px-1.5 py-1 text-[11.5px]" value={choiceScore} onChange={(e) => setChoiceScore(Number(e.target.value))} />
+                  </Field>
+                </div>
+                <Button size="sm" className="mt-2 w-full" onClick={addChoice}>
+                  <PlusIcon className="h-3.5 w-3.5" /> 添加选择题组
+                </Button>
+              </div>
+
+              <div className="rounded-xl border border-brand-100 bg-brand-50/40 p-2.5">
+                <p className="text-[11px] font-bold text-ink">主观题组</p>
+                <div className="mt-1.5 grid grid-cols-4 gap-1.5">
+                  <Field label="题数">
+                    <input type="number" min={1} max={50} className="w-full rounded-lg border border-brand-200 px-1 py-1 text-[11.5px]" value={subjCount} onChange={(e) => setSubjCount(Number(e.target.value))} />
+                  </Field>
+                  <Field label="行数">
+                    <input type="number" min={1} max={80} className="w-full rounded-lg border border-brand-200 px-1 py-1 text-[11.5px]" value={subjRows} onChange={(e) => setSubjRows(Number(e.target.value))} />
+                  </Field>
+                  <Field label="样式">
+                    <select className="w-full rounded-lg border border-brand-200 px-1 py-1 text-[11.5px]" value={subjStyle} onChange={(e) => setSubjStyle(e.target.value as 'lines' | 'blank' | 'grid')}>
+                      <option value="lines">横线</option>
+                      <option value="blank">空白</option>
+                      <option value="grid">方格</option>
+                    </select>
+                  </Field>
+                  <Field label="每题分">
+                    <input type="number" min={0.5} step={0.5} className="w-full rounded-lg border border-brand-200 px-1 py-1 text-[11.5px]" value={subjScore} onChange={(e) => setSubjScore(Number(e.target.value))} />
+                  </Field>
+                </div>
+                <Button size="sm" className="mt-2 w-full" onClick={addSubjective}>
+                  <PlusIcon className="h-3.5 w-3.5" /> 添加主观题组
+                </Button>
+              </div>
+
+              <div className="rounded-xl border border-brand-100 bg-brand-50/40 p-2.5">
+                <p className="text-[11px] font-bold text-ink">空白方框（数学 / 历史）</p>
+                <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+                  <Field label="个数">
+                    <input type="number" min={1} max={50} className="w-full rounded-lg border border-brand-200 px-1.5 py-1 text-[11.5px]" value={blankCount} onChange={(e) => setBlankCount(Number(e.target.value))} />
+                  </Field>
+                  <Field label="框高 mm">
+                    <input type="number" min={10} step={5} className="w-full rounded-lg border border-brand-200 px-1.5 py-1 text-[11.5px]" value={blankHeight} onChange={(e) => setBlankHeight(Number(e.target.value))} />
+                  </Field>
+                </div>
+                <Button size="sm" className="mt-2 w-full" onClick={addBlank}>
+                  <PlusIcon className="h-3.5 w-3.5" /> 添加空白方框组
+                </Button>
+              </div>
+
+              <div>
+                <p className="mb-1.5 text-[11px] font-bold text-ink">基础组件</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {([
+                    ['text', '文本'],
+                    ['title', '标题'],
+                    ['section', '分组标题'],
+                    ['divider', '分割线'],
+                    ['notice', '注意事项'],
+                    ['student', '学生信息'],
+                    ['barcode', '条形码占位'],
+                    ['header', '页眉'],
+                    ['footer', '页脚/页码'],
+                  ] as const).map(([k, label]) => (
+                    <button
+                      key={k}
+                      type="button"
+                      className="rounded-lg border border-brand-200 bg-white px-2 py-1 text-[10.5px] font-bold text-ink-soft hover:border-brand-400 hover:text-brand-800"
+                      onClick={() => addPreset(k)}
+                    >
+                      + {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
+
           <Card className="!p-4">
             <div className="flex items-center justify-between">
               <p className="text-[12px] font-black text-ink">{primary ? (primaryQ ? '题目属性' : '文本块属性') : '未选中元素'}</p>
@@ -889,6 +1083,18 @@ export default function CardEditorPage() {
                 </div>
               )}
             </div>
+
+            {selectedGroup && (
+              <div className="mt-2 flex items-center gap-2 rounded-lg bg-brand-50 px-2 py-1.5">
+                <span className="min-w-0 flex-1 truncate text-[10.5px] font-bold text-brand-900">组：{selectedGroup.name}</span>
+                <button type="button" className="rounded-md border border-brand-200 bg-white px-1.5 py-0.5 text-[10px] font-bold text-brand-700" onClick={() => splitGroupById(selectedGroup.id)}>
+                  拆成小题
+                </button>
+                <button type="button" className="rounded-md border border-brand-200 bg-white px-1.5 py-0.5 text-[10px] font-bold text-brand-700" onClick={() => removeGroupById(selectedGroup.id)}>
+                  删除组
+                </button>
+              </div>
+            )}
 
             {!primary && (
               <p className="mt-3 text-[11.5px] leading-relaxed text-ink-soft/65">
@@ -1097,11 +1303,60 @@ export default function CardEditorPage() {
           <Card className="!p-4">
             <button type="button" className="flex w-full items-center justify-between" onClick={() => setLayerOpen((v) => !v)}>
               <span className="text-[12px] font-black text-ink">图层</span>
-              <span className="text-[10.5px] font-semibold text-ink-soft">{allItems.length} 个 · {layerOpen ? '收起' : '展开'}</span>
+              <span className="text-[10.5px] font-semibold text-ink-soft">{(doc.groups ?? []).length} 组 + {looseItems.length} 元素 · {layerOpen ? '收起' : '展开'}</span>
             </button>
             {layerOpen && (
               <div className="mt-2 max-h-64 space-y-1 overflow-y-auto">
-                {allItems.map((it) => (
+                {(doc.groups ?? []).map((group) => {
+                  const kids = group.itemIds.map((id) => allItems.find((x) => x.id === id)).filter((x): x is (typeof allItems)[number] => Boolean(x))
+                  const allHidden = group.itemIds.every((id) => hiddenSet.has(id))
+                  const groupSelected = group.itemIds.every((id) => sel.includes(id))
+                  return (
+                    <div key={group.id} className={`rounded-lg border ${groupSelected ? 'border-brand-300 bg-brand-50/70' : 'border-brand-100/70 bg-white'}`}>
+                      <div className="flex items-center gap-1 px-1.5 py-1.5">
+                        <button
+                          type="button"
+                          className="min-w-0 flex-1 truncate text-left text-[10.5px] font-black text-brand-900"
+                          onClick={() => selectGroup(group)}
+                        >
+                          {groupSelected ? '▼' : '▶'} {group.name}
+                          <span className="ml-1 font-semibold text-ink-soft/50">({kids.length})</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="flex-none px-1 text-[10px] font-bold text-ink-soft/50 hover:text-brand-700"
+                          onClick={() => toggleGroupHidden(group)}
+                        >
+                          {allHidden ? '显示' : '隐藏'}
+                        </button>
+                        <button
+                          type="button"
+                          className="flex-none px-1 text-[10px] font-bold text-ink-soft/50 hover:text-brand-700"
+                          onClick={() => splitGroupById(group.id)}
+                        >
+                          拆
+                        </button>
+                      </div>
+                      <div className="space-y-0.5 px-1.5 pb-1.5">
+                        {kids.map((it) => (
+                          <button
+                            key={it.id}
+                            type="button"
+                            className={`flex w-full items-center gap-1 rounded-md px-2 py-1 text-left ${sel.includes(it.id) ? 'bg-white text-brand-900' : 'text-ink-soft hover:bg-white'}`}
+                            onClick={() => {
+                              setSel([it.id])
+                              setPrimary(it.id)
+                            }}
+                          >
+                            <span className="min-w-0 flex-1 truncate text-[10.5px] font-semibold">{it.label}</span>
+                            <span className="flex-none text-[9.5px] text-ink-soft/45">{it.sub}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+                {looseItems.map((it) => (
                   <div
                     key={it.id}
                     className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${sel.includes(it.id) ? 'bg-brand-50 text-brand-900' : 'hover:bg-neutral-50'}`}

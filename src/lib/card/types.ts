@@ -120,6 +120,26 @@ export interface CardMeta {
   gaokao?: boolean
 }
 
+export type CardGroupKind = 'choice' | 'subjective' | 'blank' | 'text' | 'notice' | 'barcode' | 'header' | 'footer'
+
+export interface CardGroup {
+  id: string
+  kind: CardGroupKind
+  name: string
+  itemIds: string[]
+  /** 本机组件的生成参数，仅用于本机再次编辑，不提交给后端 */
+  config?: {
+    count?: number
+    options?: number
+    rows?: number
+    style?: SubjectiveStyle
+    score?: number
+    gridCols?: number
+    heightMm?: number
+    startNumber?: number
+  }
+}
+
 export interface CardDoc {
   version: 3
   meta: CardMeta
@@ -129,6 +149,8 @@ export interface CardDoc {
   qmeta: Record<string, QuestionMeta>
   /** 文本块的语义（标题/注意事项/页脚…），决定打印外观 */
   bmeta: Record<string, BlockMeta>
+  /** 组件组（选择/主观/空白框等），只存本机设计文档，不提交后端 */
+  groups?: CardGroup[]
   /** 编辑/打印时隐藏的元素 id（不进后端，不影响识别） */
   hidden?: string[]
   updatedAt: number

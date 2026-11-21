@@ -39,6 +39,7 @@ const MExamNew = lazy(() => import('./m/pages/ExamNew'))
 const MExamDetail = lazy(() => import('./m/pages/ExamDetail'))
 const MPapers = lazy(() => import('./m/pages/Papers'))
 const MPaperDetail = lazy(() => import('./m/pages/PaperDetail'))
+const MCardEdit = lazy(() => import('./m/pages/CardEdit'))
 const MResults = lazy(() => import('./m/pages/Results'))
 const MResultDetail = lazy(() => import('./m/pages/ResultDetail'))
 const MCapture = lazy(() => import('./m/pages/Capture'))
@@ -117,7 +118,7 @@ export default function App() {
             <Route path="exams/:id" element={<MExamDetail />} />
             <Route path="papers" element={<MPapers />} />
             <Route path="papers/:id" element={<MPaperDetail />} />
-            <Route path="papers/:id/edit" element={<CardEditorPage />} />
+            <Route path="papers/:id/edit" element={<MCardEdit />} />
             <Route path="results" element={<MResults />} />
             <Route path="results/:id" element={<MResultDetail />} />
             <Route path="capture" element={<MCapture />} />

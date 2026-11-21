@@ -1370,3 +1370,22 @@
 .diag-box.error { background: #fdf2f1; color: #9a3f37; border-color: #f0cfcb; }
 .diag-box.warn { background: #fdf6e9; color: #8a6420; border-color: #f0dfbb; }
 .diag-box.ok { background: #f4f7f4; color: var(--mo-ink-3); border-color: var(--mo-line); }
+
+/* 移动端答题卡编辑器 */
+.card-edit-viewport {
+  max-height: 54vh;
+  overflow: auto;
+  border-radius: 16px;
+  background: #e9ebef;
+  padding: 12px;
+  -webkit-overflow-scrolling: touch;
+}
+.card-edit-paper {
+  position: relative;
+  margin: 0 auto;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 10px 30px -20px rgba(20, 24, 30, .4);
+}
+.card-edit-paper > div { position: absolute; left: 0; top: 0; }
+.card-edit-paper .card-body { pointer-events: none; }
