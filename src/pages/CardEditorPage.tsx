@@ -7,7 +7,7 @@ import { AlertIcon, DownloadIcon, PlusIcon, SaveIcon, TrashIcon } from '../compo
 import { Badge, Button, Card, Field, Spinner, inputCls } from '../components/ui'
 import { useToast } from '../components/Toast'
 import { errorText } from '../api/client'
-import { papersApi } from '../m/api'
+import { papersApi, studentsApi, type Student } from '../m/api'
 import type { Block, Question, Region } from '../api/types'
 import { CardSheet } from '../lib/card/render'
 import { addChoiceGroup, addPresetBlock, addSubjectiveGroup, groupOf, splitGroup } from '../lib/card/components'
@@ -88,6 +88,7 @@ export default function CardEditorPage() {
   const [barcodeFormat, setBarcodeFormat] = useState<CardBarcodeFormat>('CODE128')
   const [barcodeValue, setBarcodeValue] = useState('')
   const [barcodeShowText, setBarcodeShowText] = useState(true)
+  const [students, setStudents] = useState<Student[]>([])
 
   const past = useRef<CardDoc[]>([])
   const future = useRef<CardDoc[]>([])
@@ -145,6 +146,10 @@ export default function CardEditorPage() {
   useEffect(() => {
     if (doc) setIssues(validateCard(doc))
   }, [doc])
+
+  useEffect(() => {
+    studentsApi.list().then(setStudents).catch(() => setStudents([]))
+  }, [])
 
   // 打开时按可视宽度自动缩放到适合屏幕
   useEffect(() => {
@@ -1111,6 +1116,25 @@ export default function CardEditorPage() {
 
               <div className="rounded-xl border border-brand-100 bg-brand-50/40 p-2.5">
                 <p className="text-[11px] font-bold text-ink">自定义条形码</p>
+                <div className="mt-1.5">
+                  <Field label="从学生考号带入">
+                    <select
+                      className="w-full rounded-lg border border-brand-200 px-1.5 py-1 text-[11px]"
+                      value=""
+                      onChange={(e) => {
+                        const s = students.find((x) => String(x.candidateNumber ?? '') === e.target.value)
+                        if (s?.candidateNumber) setBarcodeValue(s.candidateNumber)
+                      }}
+                    >
+                      <option value="">手动输入 / 选择学生考号</option>
+                      {students.filter((s) => s.candidateNumber).map((s) => (
+                        <option key={`${s.id ?? s.name}-${s.candidateNumber}`} value={s.candidateNumber}>
+                          {s.name} · {s.candidateNumber}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
                 <div className="mt-1.5 grid grid-cols-[1fr_auto] gap-1.5">
                   <Field label="内容">
                     <input

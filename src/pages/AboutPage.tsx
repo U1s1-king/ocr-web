@@ -36,8 +36,6 @@ export default function AboutPage() {
             <Badge tone="mute">{BRAND.pinyin}</Badge>
             <LogoMark mono className="mt-3 h-16 w-16" />
             <p className="mt-1 text-[11px] tracking-[0.2em] text-white/60">{BRAND.tagline}</p>
-            <p className="mt-3 max-w-md text-xs leading-relaxed text-white/75">「{BRAND.quote}」</p>
-            <p className="mt-1 text-[10.5px] text-white/50">——{BRAND.source}</p>
             <p className="mt-3 text-xs text-white/70">
               版本 {VERSION} · 构建于 {BUILD}
             </p>

@@ -1389,3 +1389,27 @@
 }
 .card-edit-paper > div { position: absolute; left: 0; top: 0; }
 .card-edit-paper .card-body { pointer-events: none; }
+
+/* 首页功能入口页 */
+.mhome-start {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  color: #fff;
+  background:
+    radial-gradient(120% 120% at 100% 0%, rgba(255,255,255,.16), transparent 55%),
+    linear-gradient(135deg, color-mix(in srgb, var(--mo-accent) 92%, #0b1224), color-mix(in srgb, var(--mo-accent) 58%, #15203a));
+}
+.mhome-start:active { transform: scale(.995); opacity: .94; }
+.mhome-start-ico {
+  display: grid;
+  place-items: center;
+  width: 40px; height: 40px;
+  flex: none;
+  border-radius: 12px;
+  background: rgba(255,255,255,.14);
+}

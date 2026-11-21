@@ -7,6 +7,7 @@ import { BRAND } from '../../lib/brand'
 import { StatsStrip } from '../StatsStrip'
 import { Logo, LogoMark } from '../../components/Logo'
 import { getThemeColor, presetOf } from '../theme'
+import { getAccount, roleLabel, ROLES, saveAccount, type RoleId } from '../../lib/account'
 import { fileToAvatar, getProfile, persistAvatar, resetProfile, resolveAvatar, saveProfile, type Profile } from '../profile'
 import Avatar from '../Avatar'
 import AvatarCropper, { type Crop } from '../AvatarCropper'
@@ -51,6 +52,7 @@ export default function Mine() {
   const toast = useToast()
   const theme = getThemeColor()
   const [profile, setProfile] = useState<Profile>(getProfile())
+  const [role, setRole] = useState<RoleId>(() => getAccount().role)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<Profile>(profile)
   const [busy, setBusy] = useState(false)
@@ -101,6 +103,8 @@ export default function Mine() {
           toast('存储空间不够，这张图太大了', 'err')
           return
         }
+        const av = resolveAvatar(stored)
+        saveAccount({ name: out.name, avatar: av.length < 200_000 ? av : '', role })
         setProfile(out)
         setEditing(false)
         toast('资料已保存到本机', 'ok')
@@ -129,7 +133,7 @@ export default function Mine() {
         <Avatar profile={profile} size={58} />
         <span className="relative min-w-0 flex-1">
           <span className="block truncate text-[19px] font-black leading-tight text-ink">{profile.name}</span>
-          <span className="mo-muted mt-1 block">已存 {total} 份成绩 · 本机保存</span>
+          <span className="mo-muted mt-1 block">已存 {total} 份成绩 · {roleLabel(role)} · 本机保存</span>
         </span>
         <span className="mo-profile-edit">编辑</span>
       </button>
@@ -199,8 +203,6 @@ export default function Mine() {
       </div>
 
       <div className="mt-5 text-center">
-        <p className="text-[10px] leading-relaxed text-ink-soft/55">「{BRAND.quote}」</p>
-        <p className="mt-0.5 text-[9px] text-ink-soft/35">——{BRAND.source}</p>
         <div className="mt-1.5 flex items-center justify-center gap-1.5 opacity-40">
           <LogoMark className="h-3.5 w-3.5" />
           <span className="text-[9px] tracking-[0.16em] text-ink-soft">{BRAND.pinyin} · {BRAND.version}</span>
@@ -266,7 +268,23 @@ export default function Mine() {
             />
           </label>
 
-          <p className="mo-muted">支持 GIF 动图，不限大小，大图会自动存到浏览器本地库。目前只存在这台手机里，服务器接口好了再同步。</p>
+          <div>
+            <p className="mo-field-label mb-1.5">权限身份（本地模拟）</p>
+            <div className="grid grid-cols-3 gap-1.5">
+              {ROLES.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  className={`rounded-xl border px-2 py-2 text-left ${role === r.id ? 'border-brand-400 bg-brand-50' : 'border-line bg-white'}`}
+                  onClick={() => setRole(r.id)}
+                >
+                  <span className="block text-[11px] font-extrabold text-ink">{r.label}</span>
+                  <span className="mt-0.5 block text-[8.5px] leading-tight text-ink-soft/60">{r.desc}</span>
+                </button>
+              ))}
+            </div>
+            <p className="mo-muted mt-1.5">后端登录接入后改为真实账号权限；当前为本地演示身份。</p>
+          </div>
 
           <div className="flex gap-2">
             <Btn block variant="ghost" onClick={reset}>

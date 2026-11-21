@@ -91,11 +91,6 @@ export function Splash() {
         <div className="sp-copy">
           <p className="sp-word sp-word-1">{BRAND.name}</p>
           <p className="sp-word sp-word-2">{BRAND.pinyin}</p>
-          <p className="sp-quote">
-            「{BRAND.quote}」
-            <br />
-            <em>——{BRAND.source}</em>
-          </p>
         </div>
 
         <div className="sp-progress">

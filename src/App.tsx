@@ -7,6 +7,7 @@ const FilesPage = lazy(() => import('./pages/FilesPage'))
 const PapersPage = lazy(() => import('./pages/PapersPage'))
 const PaperPrintPage = lazy(() => import('./pages/PaperPrintPage'))
 const CardStudioPage = lazy(() => import('./pages/CardStudioPage'))
+const BarcodeStudioPage = lazy(() => import('./pages/BarcodeStudioPage'))
 const DslStudioPage = lazy(() => import('./pages/DslStudioPage'))
 const CardEditorPage = lazy(() => import('./pages/CardEditorPage'))
 import { Splash } from './components/Splash'
@@ -93,7 +94,8 @@ export default function App() {
             <Route path="papers" element={<PapersPage />} />
             <Route path="papers/studio" element={<CardStudioPage />} />
             <Route path="papers/dsl" element={<DslStudioPage />} />
-            <Route path="papers/templates" element={<CardStudioPage />} />
+            <Route path="papers/templates" element={<BarcodeStudioPage />} />
+            <Route path="papers/barcode" element={<BarcodeStudioPage />} />
             <Route path="papers/local/edit" element={<CardEditorPage />} />
             <Route path="papers/:id/edit" element={<CardEditorPage />} />
 

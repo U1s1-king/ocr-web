@@ -94,7 +94,14 @@ export default function PapersPage() {
             onClick={() => nav('/papers/studio')}
             className="rounded-xl border border-brand-300 bg-brand-50 px-4 py-2 text-[12px] font-bold text-brand-700"
           >
-            模板工坊 · 自动出卡
+            答题卡制作
+          </button>
+          <button
+            type="button"
+            onClick={() => nav('/papers/templates')}
+            className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-[12px] font-bold text-brand-700"
+          >
+            条形码制作
           </button>
           <button
             type="button"

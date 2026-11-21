@@ -98,6 +98,19 @@ export default function Papers() {
         ]}
       />
 
+      <div className="mo-quick mt-3">
+        {[
+          { label: '答题卡制作', to: '/papers/studio', Icon: IcGrid },
+          { label: '条形码制作', to: '/papers/templates', Icon: IcLayers },
+          { label: '文本出卡', to: '/papers/dsl', Icon: IcSpark },
+        ].map(({ label, to, Icon }) => (
+          <button key={to} type="button" className="mo-quick-item" onClick={() => nav(to)}>
+            <span className="mo-quick-ico"><Icon style={{ fontSize: 19 }} /></span>
+            <span>{label}</span>
+          </button>
+        ))}
+      </div>
+
       {/* 分段胶囊 */}
       <div className="mo-seg mb-3">
         <button

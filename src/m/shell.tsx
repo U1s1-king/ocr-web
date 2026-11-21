@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { IcCalendar, IcHome, IcSearch, IcUsers } from './icons'
+import { IcChart, IcHome, IcLayers, IcSearch, IcUsers } from './icons'
 import { initTheme } from './theme'
 import SearchPanel from './SearchPanel'
 import { ScrollFx } from '../components/ScrollFx'
@@ -10,16 +10,16 @@ import { useVisualPrefs } from '../lib/visualPrefs'
 const TABS = [
   { to: '/m', label: '首页', Icon: IcHome, match: (p: string) => p === '/m' },
   {
-    to: '/m/exams',
-    label: '考试',
-    Icon: IcCalendar,
-    match: (p: string) => p.startsWith('/m/exams') || p.startsWith('/m/batches'),
+    to: '/m/papers',
+    label: '试卷',
+    Icon: IcLayers,
+    match: (p: string) => p.startsWith('/m/papers'),
   },
   {
-    to: '/m/students',
-    label: '学生',
-    Icon: IcUsers,
-    match: (p: string) => p.startsWith('/m/students'),
+    to: '/m/results',
+    label: '成绩',
+    Icon: IcChart,
+    match: (p: string) => p.startsWith('/m/results'),
   },
   {
     to: '/m/mine',
