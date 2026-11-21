@@ -6,6 +6,7 @@
  * 容量不够时先压行距/字号，仍不够就整体按比例收缩，最后自动升纸型（A4→A3）并给出提示。
  */
 import type { Block, ExamContent, Question } from '../../api/types'
+import { ANSWER_CARD_BARCODE_AREA } from '../barcode/templates'
 import {
   canvasOf,
   mm2u,
@@ -148,8 +149,8 @@ function layoutHeader(
   const { ctx, doc } = b
   const { contentX0, contentW } = ctx
   let y = top
-  const barcodeW = 54
-  const barcodeH = 26
+  const barcodeW = ANSWER_CARD_BARCODE_AREA.width
+  const barcodeH = ANSWER_CARD_BARCODE_AREA.height
   const hasBarcode = spec.showBarcode
   const leftW = hasBarcode ? contentW - barcodeW - 4 : contentW
 

@@ -6,6 +6,7 @@ import { useToast } from '../../components/Toast'
 import { CardSheet } from '../../lib/card/render'
 import { addChoiceGroup, addPresetBlock, addSubjectiveGroup, groupOf, splitGroup } from '../../lib/card/components'
 import { BARCODE_FORMATS, validateBarcode } from '../../lib/card/barcode'
+import { ANSWER_CARD_BARCODE_AREA } from '../../lib/barcode/templates'
 import { cloneDoc, mm2u, paperMm, u2mm, type CardDoc, type CardGroup, type CardBarcode, type CardBarcodeFormat } from '../../lib/card/types'
 import { resolveDoc, savePaperDoc } from '../../lib/card/store'
 import { Btn, Card, Page, Sheet } from '../ui'
@@ -230,7 +231,7 @@ export default function CardEdit() {
       format: barcodeFormat,
       value: barcodeValue.trim(),
       showText: barcodeShowText,
-      region: { x: mm2u(page.w - 14 - 54), y: mm2u(Math.min(page.h - 28, maxY + 3)), width: mm2u(54), height: mm2u(26) },
+      region: { x: mm2u(page.w - 14 - ANSWER_CARD_BARCODE_AREA.width), y: mm2u(Math.min(page.h - ANSWER_CARD_BARCODE_AREA.height - 2, maxY + 3)), width: mm2u(ANSWER_CARD_BARCODE_AREA.width), height: mm2u(ANSWER_CARD_BARCODE_AREA.height) },
     }
     const next = cloneDoc(doc)
     next.barcodes = [...(next.barcodes ?? []), bc]

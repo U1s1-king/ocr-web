@@ -1375,3 +1375,77 @@ header { z-index: 20; }
   .print-hide { display: none !important; }
   @page { size: A4; margin: 8mm; }
 }
+
+/* 条形码制作：模板预览与卷纸/双列打印 */
+.barcode-studio-preview {
+  max-height: 640px;
+  overflow: auto;
+  border-radius: 12px;
+  background: #e9ebef;
+  padding: 12px;
+}
+.bc-page {
+  position: relative;
+  margin: 0 auto;
+  flex: none;
+  background: #fff;
+  box-shadow: 0 10px 30px -22px rgba(20, 24, 30, .45);
+}
+.bc-label {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: #fff;
+  border: 0.2mm dashed #d3d8df;
+  color: #111;
+}
+.bc-label-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1mm;
+  flex: none;
+}
+.bc-label-name { font-size: 2.8mm; font-weight: 800; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bc-label-class { font-size: 2mm; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bc-label-code { flex: 1; min-height: 0; margin-top: 0.5mm; }
+.bc-label-bottom {
+  flex: none;
+  margin-top: 0.3mm;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.9mm;
+  line-height: 1;
+  color: #333;
+  letter-spacing: .04em;
+}
+.bc-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #8a929c;
+  font-size: 11px;
+}
+.bc-print-root { display: none; }
+@media print {
+  body * { visibility: hidden !important; }
+  .bc-print-root, .bc-print-root * { visibility: visible !important; }
+  .bc-print-root {
+    display: block !important;
+    position: absolute;
+    left: 0; top: 0;
+    background: #fff;
+  }
+  .bc-print-page {
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+    break-after: page;
+    background: #fff;
+  }
+  .bc-print-page:last-child { page-break-after: auto; break-after: auto; }
+  .bc-label { border-color: #ddd; }
+  .print-hide { display: none !important; }
+}

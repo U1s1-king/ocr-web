@@ -12,6 +12,7 @@ import type { Block, Question, Region } from '../api/types'
 import { CardSheet } from '../lib/card/render'
 import { addChoiceGroup, addPresetBlock, addSubjectiveGroup, groupOf, splitGroup } from '../lib/card/components'
 import { BARCODE_FORMATS, validateBarcode } from '../lib/card/barcode'
+import { ANSWER_CARD_BARCODE_AREA } from '../lib/barcode/templates'
 import {
   createPaperFromDoc,
   readLocalDoc,
@@ -628,7 +629,7 @@ export default function CardEditorPage() {
       format: barcodeFormat,
       value: barcodeValue.trim(),
       showText: barcodeShowText,
-      region: { x: mm2u(page.w - 14 - 54), y: mm2u(Math.min(page.h - 28, maxY + 3)), width: mm2u(54), height: mm2u(26) },
+      region: { x: mm2u(page.w - 14 - ANSWER_CARD_BARCODE_AREA.width), y: mm2u(Math.min(page.h - ANSWER_CARD_BARCODE_AREA.height - 2, maxY + 3)), width: mm2u(ANSWER_CARD_BARCODE_AREA.width), height: mm2u(ANSWER_CARD_BARCODE_AREA.height) },
     }
     const group: CardGroup = {
       id: `grpbc${Date.now().toString(36)}`,
@@ -1164,7 +1165,7 @@ export default function CardEditorPage() {
                   <PlusIcon className="h-3.5 w-3.5" /> 添加自定义条形码
                 </Button>
                 <p className="mt-1 text-[9.5px] leading-relaxed text-ink-soft/60">
-                  默认 54×26mm，可拖动缩放；与“贴条形码区”占位互不影响。
+                  默认 50×20mm，可拖动缩放；与“贴条形码区”占位互不影响。
                 </p>
               </div>
 
