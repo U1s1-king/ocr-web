@@ -1,0 +1,178 @@
+import type {
+  Barcode,
+  Block,
+  ExamContent,
+  Marker,
+  Question,
+} from '../../api/types'
+import type { PaperV2, PaperV2Page, PaperV2Question, RawPaperDetail } from '../../api/typesV2'
+import type { PaperDetail } from '../../m/api'
+
+/** 判断是不是后端 v2 包装（兼容部分文档里仍写 schemaVersion:1 的旧示例） */
+export function isPaperV2(value: unknown): value is PaperV2 {
+  if (!value || typeof value !== 'object') return false
+  const v = value as Partial<PaperV2>
+  return (
+    Boolean(v.answerCard && Array.isArray(v.answerCard.pages)) &&
+    Boolean(v.paper && Array.isArray(v.paper.pages))
+  )
+}
+
+/** 空内容：新建试卷后后端返回 {} */
+export function emptyPaperV2(): PaperV2 {
+  return {
+    schemaVersion: 2,
+    answerCard: { answerKey: {}, pages: [] },
+    paper: { pages: [] },
+  }
+}
+
+/**
+ * 把当前前端的单页 ExamContent 包成后端 v2。
+ * 后端 v2 目前只保存答题卡版面，不保存题干/解析；题干仍在前端/题库侧维护。
+ */
+export function toPaperV2(content: ExamContent): PaperV2 {
+  const page: PaperV2Page = {
+    page: 1,
+    unit: 'canvas',
+    canvas: content.canvas,
+    markers: content.markers as Marker[],
+    blocks: (content.blocks ?? []) as Block[],
+    questions: content.questions.map((q) => ({
+      id: q.id,
+      displayNumber: q.displayNumber,
+      type: q.type,
+      score: Number(q.score) || 0,
+      region: q.region,
+      ...(q.type === 'mark' ? { choices: q.choices ?? [] } : {}),
+    })) as PaperV2Question[],
+    ...(content.barcode ? { barcode: content.barcode as Barcode } : {}),
+  }
+
+  // 答案键只允许 mark 题；主观题答案不进入后端 v2
+  const markIds = new Set(content.questions.filter((q) => q.type === 'mark').map((q) => q.id))
+  const answerKey = Object.fromEntries(
+    Object.entries(content.answerKey ?? {}).filter(([id, value]) => markIds.has(id) && Boolean(value)),
+  )
+
+  return {
+    schemaVersion: 2,
+    answerCard: { answerKey, pages: [page] },
+    paper: { pages: [] },
+  }
+}
+
+/** 把后端 v2 的第一页还原成当前编辑器使用的单页 ExamContent */
+export function fromPaperV2(doc: PaperV2): ExamContent {
+  const page = doc.answerCard.pages[0]
+  if (!page) {
+    return {
+      schemaVersion: 1,
+      unit: 'canvas',
+      canvas: { width: 300, height: 424.29 },
+      markers: [],
+      questions: [],
+      blocks: [],
+      answerKey: {},
+    }
+  }
+  return {
+    schemaVersion: 1,
+    unit: 'canvas',
+    canvas: page.canvas,
+    markers: page.markers ?? [],
+    blocks: page.blocks ?? [],
+    questions: page.questions.map((q) => ({
+      id: q.id,
+      displayNumber: q.displayNumber,
+      type: q.type === 'mark' ? 'mark' : 'subjective',
+      score: q.score,
+      region: q.region,
+      ...(q.type === 'mark' ? { choices: q.choices ?? [] } : {}),
+    })) as Question[],
+    ...(page.barcode ? { barcode: page.barcode } : {}),
+    answerKey: doc.answerCard.answerKey ?? {},
+  }
+}
+
+export function pageCountOf(doc: PaperV2): { answerCard: number; paper: number } {
+  return { answerCard: doc.answerCard.pages.length, paper: doc.paper.pages.length }
+}
+
+/** API 返回归一化：内部继续给旧组件提供单页 ExamContent，同时保留原始 v2 */
+export function normalizePaperDetail(raw: RawPaperDetail): PaperDetail {
+  if (!raw || typeof raw !== 'object') {
+    return { id: 0, name: '', paper: {} }
+  }
+  const paper = raw.paper
+  if (isPaperV2(paper)) {
+    return {
+      id: raw.id,
+      name: raw.name,
+      paper: fromPaperV2(paper),
+      rawPaper: paper,
+      schemaVersion: 2,
+      pageCount: pageCountOf(paper),
+    }
+  }
+  const old = paper as unknown as ExamContent
+  if (old && typeof old === 'object' && Array.isArray(old.questions)) {
+    return {
+      id: raw.id,
+      name: raw.name,
+      paper: old,
+      schemaVersion: 1,
+      pageCount: { answerCard: 1, paper: 0 },
+    }
+  }
+  return { id: raw.id, name: raw.name, paper: {}, pageCount: { answerCard: 0, paper: 0 } }
+}
+
+/* ========================================================================== */
+/* PaperBundle（前端统一试卷模型）→ 后端 v2                                    */
+/* ========================================================================== */
+
+import type { PaperBundle } from './types'
+
+/**
+ * 把前端的 PaperBundle 转成后端 v2 包装。
+ * 注意：后端 v2 当前只保存版面/题区/涂卡答案；
+ * 题干、选项文字、主观题答案和解析仍由前端/题库侧保存。
+ */
+export function bundleToPaperV2(bundle: PaperBundle): PaperV2 {
+  const answerPages: PaperV2Page[] = bundle.answerCard.pages.map((page, i) => ({
+    page: i + 1,
+    unit: 'canvas',
+    canvas: page.canvas,
+    markers: page.markers,
+    blocks: page.blocks.map((b) => ({
+      id: b.id,
+      type: 'text' as const,
+      region: b.region,
+      text: b.text,
+      ...(b.style ? { style: b.style } : {}),
+    })),
+    questions: bundle.questions
+      .filter((q) => q.answerCard.page === page.side)
+      .sort((a, b) => a.number - b.number)
+      .map((q) => ({
+        id: q.id,
+        displayNumber: q.number,
+        type: q.answerCard.type,
+        score: q.score,
+        region: q.answerCard.region,
+        ...(q.answerCard.type === 'mark' ? { choices: q.answerCard.choices ?? [] } : {}),
+      })) as PaperV2Question[],
+  }))
+
+  const markAnswers: Record<string, string> = {}
+  for (const q of bundle.questions) {
+    if (q.answerCard.type === 'mark' && q.answer) markAnswers[q.id] = q.answer
+  }
+
+  return {
+    schemaVersion: 2,
+    answerCard: { answerKey: markAnswers, pages: answerPages },
+    paper: { pages: [] },
+  }
+}

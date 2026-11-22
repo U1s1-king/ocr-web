@@ -2,6 +2,8 @@ import { ApiError, errorText, getApiBase, getApiToken, request } from '../api/cl
 import { recordRequest } from '../lib/requestLog'
 import { clearCache } from './cache'
 import type { ExamContent } from '../api/types'
+import type { RawPaperDetail, PaperV2 } from '../api/typesV2'
+import { isPaperV2, normalizePaperDetail, toPaperV2 } from '../lib/paper/backendV2'
 import { listStudents } from '../api/students'
 
 export { ApiError, errorText }
@@ -17,7 +19,12 @@ export interface PaperSummary {
 export interface PaperDetail {
   id: number
   name: string
+  /** 兼容旧编辑器的单页视图（由 v2 第一页派生） */
   paper: (PaperJson & { designV2?: unknown }) | Record<string, never>
+  /** 原始 v2（如果后端返回 v2） */
+  rawPaper?: PaperV2
+  schemaVersion?: 1 | 2
+  pageCount?: { answerCard: number; paper: number }
 }
 
 export interface ExamSummary {
@@ -228,16 +235,16 @@ function json<T>(path: string, method: string, body: unknown): Promise<T> {
 
 export const papersApi = {
   list: () => request<PaperSummary[]>(`${P}/papers`),
-  get: (id: number) => request<PaperDetail>(`${P}/papers/${id}`),
+  get: async (id: number) => normalizePaperDetail(await request<RawPaperDetail>(`${P}/papers/${id}`)),
   create: async (name: string) => {
-    const r = await json<PaperDetail>(`${P}/papers`, 'POST', { name })
+    const r = normalizePaperDetail(await json<RawPaperDetail>(`${P}/papers`, 'POST', { name }))
     clearCache('papers')
     return r
   },
-  /** 第二参数可选：把设计文档 v2 一起塞进 paper JSON 的 designV2 字段 */
-  update: async (id: number, paper: PaperJson, design?: unknown) => {
-    const payload = design ? { ...paper, designV2: design } : paper
-    const r = await json<PaperDetail>(`${P}/papers/${id}`, 'PUT', payload)
+  /** 保存：内部单页 ExamContent 自动包成后端 v2；也接受原始 v2 */
+  update: async (id: number, paper: PaperJson | PaperV2) => {
+    const payload = isPaperV2(paper) ? paper : toPaperV2(paper)
+    const r = normalizePaperDetail(await json<RawPaperDetail>(`${P}/papers/${id}`, 'PUT', payload))
     clearCache('papers')
     return r
   },
@@ -269,17 +276,40 @@ export interface TemplateSummary { id: number; name: string }
 /** 模板接口：模板与试卷共用 papers 表，模板 id 就是 papers.id */
 export const templatesApi = {
   list: () => request<TemplateSummary[]>(`${P}/templates`),
-  get: (id: number) => request<PaperDetail>(`${P}/templates/${id}`),
-  /** 由模板生成一张新试卷：先建空卷，再把模板内容整份写进去 */
+  get: async (id: number) => normalizePaperDetail(await request<RawPaperDetail>(`${P}/templates/${id}`)),
+  /** 由模板生成一张新试卷：先建空卷，再把模板 v2 内容整份写进去 */
   instantiate: async (tplId: number, name: string): Promise<PaperDetail> => {
-    const tpl = await request<PaperDetail>(`${P}/templates/${tplId}`)
-    const created = await json<PaperDetail>(`${P}/papers`, 'POST', { name })
-    const paper = tpl.paper
-    if (paper && Object.keys(paper).length > 0) {
-      await json<PaperDetail>(`${P}/papers/${created.id}`, 'PUT', paper)
+    const tplRaw = await request<RawPaperDetail>(`${P}/templates/${tplId}`)
+    const tpl = normalizePaperDetail(tplRaw)
+    const created = normalizePaperDetail(await json<RawPaperDetail>(`${P}/papers`, 'POST', { name }))
+    if (tplRaw.paper && typeof tplRaw.paper === 'object' && Object.keys(tplRaw.paper).length > 0) {
+      const payload = isPaperV2(tplRaw.paper) ? tplRaw.paper : toPaperV2(tpl.paper as PaperJson)
+      await json(`${P}/papers/${created.id}`, 'PUT', payload)
     }
     clearCache('papers')
-    return { ...created, paper }
+    return {
+      ...created,
+      paper: tpl.paper,
+      rawPaper: tpl.rawPaper,
+      schemaVersion: tpl.schemaVersion,
+      pageCount: tpl.pageCount,
+    }
+  },
+  /** 从已有试卷复制模板 */
+  createFromPaper: async (name: string, paperId: number) => {
+    const r = await json<{ id: number; name: string }>(`${P}/templates`, 'POST', { name, paperId })
+    clearCache('papers')
+    return r
+  },
+  /** 直接提交完整 v2 模板 */
+  createDirect: async (name: string, paper: PaperV2) => {
+    const r = await json<{ id: number; name: string }>(`${P}/templates`, 'POST', { name, paper })
+    clearCache('papers')
+    return r
+  },
+  remove: async (id: number) => {
+    await request<void>(`${P}/templates/${id}`, { method: 'DELETE' })
+    clearCache('papers')
   },
 }
 

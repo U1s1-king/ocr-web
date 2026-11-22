@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { makeMockPaperBundle } from '../lib/paper/mock'
+import { bundleToPaperV2 } from '../lib/paper/backendV2'
 import {
   bundleTotalScore,
   questionsForPage,
@@ -56,6 +57,17 @@ export default function PaperBundlePage() {
   function reset() {
     persist(makeMockPaperBundle())
     setMessage('已恢复示例试卷')
+  }
+
+  function exportBackendV2() {
+    const blob = new Blob([JSON.stringify(bundleToPaperV2(bundle), null, 2)], { type: 'application/json;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${bundle.meta.title || 'paper-bundle'}.backend-v2.json`
+    a.click()
+    URL.revokeObjectURL(url)
+    setMessage('已导出后端 v2 包装 JSON（answerCard.pages + paper.pages）')
   }
 
   function exportJson() {
@@ -156,6 +168,9 @@ export default function PaperBundlePage() {
           </label>
           <button type="button" onClick={exportJson} className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-[11.5px] font-bold text-brand-700">
             导出 JSON
+          </button>
+          <button type="button" onClick={exportBackendV2} className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-[11.5px] font-bold text-brand-700">
+            导出后端 v2
           </button>
           <button type="button" onClick={reset} className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-[11.5px] font-bold text-ink-soft">
             恢复示例
