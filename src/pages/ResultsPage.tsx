@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { readCache, writeCache } from '../m/cache'
 import { errorText, examsApi, resultsApi, type ExamSummary, type ResultItem, type ResultSummary } from '../m/api'
 import { BarChart, DonutChart, LineChart, type Point } from '../m/charts'
@@ -17,8 +17,6 @@ type Filters = {
 }
 
 const DEFAULT_FILTERS: Filters = { examIds: [], sort: 'time_desc', min: '', max: '', keyword: '' }
-const FIRST = 20
-const BATCH = 50
 
 const VIEWS: { key: View; label: string }[] = [
   { key: 'bar', label: '分数段' },
@@ -50,13 +48,8 @@ export default function ResultsPage() {
   const [total, setTotal] = useState(0)
   const [summary, setSummary] = useState<ResultSummary>({ resultCount: 0, averageScore: 0, maxScore: 0 })
   const [loading, setLoading] = useState(true)
-  const [streaming, setStreaming] = useState(false)
   const [err, setErr] = useState('')
 
-  const genRef = useRef(0)
-  const accRef = useRef<ResultItem[]>([])
-  const sumRef = useRef<ResultSummary>({ resultCount: 0, averageScore: 0, maxScore: 0 })
-  const totalRef = useRef(0)
 
   useEffect(() => {
     examsApi
@@ -68,121 +61,50 @@ export default function ResultsPage() {
   const cacheKey = `results.${filters.examIds.join(',') || 'all'}.${filters.sort}`
 
   useEffect(() => {
-    const gen = genRef.current + 1
-    genRef.current = gen
-    setErr('')
-
     const cached = readCache<{ items: ResultItem[]; summary: ResultSummary; total: number }>(cacheKey)
-    const startItems = cached?.items ?? []
-    accRef.current = startItems
-    sumRef.current = cached?.summary ?? { resultCount: 0, averageScore: 0, maxScore: 0 }
-    totalRef.current = cached?.total ?? 0
-    setAll(startItems)
-    setTotal(totalRef.current)
-    setSummary(sumRef.current)
-    setLoading(startItems.length === 0)
-
-    // 缓存已是全量：直接用，不打后端
-    if (cached && cached.total > 0 && startItems.length >= cached.total) {
-      setStreaming(false)
-      return
+    if (cached) {
+      setAll(cached.items)
+      setSummary(cached.summary)
+      setTotal(cached.total)
     }
-    setStreaming(true)
+    setLoading(!cached || cached.items.length === 0)
+    setErr('')
+    let alive = true
 
     const order = {
       sortBy: [filters.sort === 'time_desc' ? 'uTime' : 'score'],
       sortDirection: [filters.sort === 'score_asc' ? 'asc' : 'desc'],
     }
-    const page = (offset: number, limit: number) =>
-      filters.examIds.length
-        ? resultsApi.list({ offset, limit, ...order, examIds: filters.examIds })
-        : resultsApi.listAll({ offset, limit, ...order })
+    const req = filters.examIds.length
+      ? resultsApi.list({ offset: 0, limit: 10000, ...order, examIds: filters.examIds })
+      : resultsApi.listAll({ offset: 0, limit: 10000, ...order })
 
-    /* ---- 逐条填充：网络回来的数据先进队列，再一条条冒到界面上 ---- */
-    const queue: ResultItem[] = []
-    let pumping = false
-    let stopped = false
-
-    const pump = () => {
-      if (pumping || stopped) return
-      pumping = true
-      const tick = () => {
-        if (stopped || gen !== genRef.current) {
-          pumping = false
-          return
-        }
-        if (!queue.length) {
-          pumping = false
-          return
-        }
-        const take = queue.splice(0, 3)
-        accRef.current = accRef.current.concat(take)
-        setAll(accRef.current)
-        window.setTimeout(tick, 16)
-      }
-      tick()
-    }
-
-    ;(async () => {
-      let offset = startItems.length
-      let failed = false
-      try {
-        for (;;) {
-          // 第一轮只取一小撮，让界面立刻有内容；后面两路并行预取
-          const first = offset === startItems.length
-          const limit = first ? FIRST : BATCH
-          const reqs = first ? [page(offset, limit)] : [page(offset, limit), page(offset + limit, limit)]
-          const rs = await Promise.all(reqs)
-          if (stopped || gen !== genRef.current) return
-          const r1 = rs[0]
-          const r2 = rs[1] as typeof r1 | undefined
-          const reported = r2?.total ?? r1.total ?? 0
-          const totalN = reported > 0 ? reported : totalRef.current
-          totalRef.current = totalN
-          sumRef.current = r1.summary
-          setTotal(totalN)
-          setSummary(r1.summary)
-          setLoading(false)
-          const batch = rs.reduce<ResultItem[]>((acc2, r) => acc2.concat(r.items), [])
-          if (!batch.length) break
-          queue.push(...batch)
-          pump()
-          offset += batch.length
-          if (reported > 0 && offset >= reported) break
-          if (r1.items.length < limit) break
-        }
-      } catch (e) {
-        failed = true
-        if (stopped || gen !== genRef.current) return
+    req
+      .then((r) => {
+        if (!alive) return
+        setAll(r.items)
+        setSummary(r.summary)
+        setTotal(r.total > 0 ? r.total : r.items.length)
+        writeCache(cacheKey, {
+          items: r.items,
+          summary: r.summary,
+          total: r.total > 0 ? r.total : r.items.length,
+        })
+        setErr('')
+      })
+      .catch((e) => {
+        if (!alive) return
+        if (!cached) setAll([])
         setErr(errorText(e))
-        setLoading(false)
-      } finally {
-        if (!stopped && gen === genRef.current) {
-          const finish = () => {
-            if (stopped || gen !== genRef.current) return
-            if (queue.length) {
-              window.setTimeout(finish, 60)
-              return
-            }
-            if (failed) {
-              setStreaming(false)
-              return
-            }
-            writeCache(cacheKey, {
-              items: accRef.current,
-              summary: sumRef.current,
-              total: totalRef.current || accRef.current.length,
-            })
-            setStreaming(false)
-          }
-          finish()
-        }
-      }
-    })()
+      })
+      .finally(() => {
+        if (alive) setLoading(false)
+      })
 
     return () => {
-      stopped = true
+      alive = false
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cacheKey])
 
   function openPanel() {
@@ -339,7 +261,7 @@ export default function ResultsPage() {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
-          { label: '成绩总数', value: summary.resultCount || total || all.length, hint: '含已加载与后台数据' },
+          { label: '成绩总数', value: summary.resultCount || total || all.length, hint: '当前筛选范围的全部成绩' },
           { label: '平均分', value: Math.round(summary.averageScore || 0), hint: '当前筛选范围' },
           { label: '最高分', value: summary.maxScore || 0, hint: '本场最高' },
           {
@@ -380,29 +302,13 @@ export default function ResultsPage() {
         </span>
       </div>
 
-      {/* 加载状态条：边拉边填 */}
-      {(streaming || all.length > 0) && !err && (
-        <div className="rounded-xl border border-brand-200/70 bg-white px-3 py-2">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold text-ink-soft">
-              {streaming ? (total > 0 ? `正在加载 ${all.length} / ${total} 条` : `已加载 ${all.length} 条 · 后台继续`) : `已全部加载 ${all.length} 条`}
-            </span>
-            {streaming && (
-              <span className="ml-auto text-[10.5px] font-semibold text-brand-700">后台继续拉取，可先看已加载部分</span>
-            )}
-          </div>
-          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-brand-50">
-            <div
-              className="h-full rounded-full bg-brand-500 transition-all duration-500"
-              style={{ width: `${total ? Math.min(100, (all.length / total) * 100) : 12}%` }}
-            />
-          </div>
-        </div>
+      {!loading && !err && all.length > 0 && (
+        <p className="text-[11px] font-semibold text-ink-soft/60">已加载全部 {all.length} 条成绩</p>
       )}
 
       {loading && all.length === 0 ? (
         <div className="rounded-2xl border border-brand-200/70 bg-white p-10 text-center text-[12px] font-semibold text-ink-soft/60">
-          正在加载第一批成绩…
+          正在拉取全部成绩…
         </div>
       ) : all.length === 0 ? (
         <div className="rounded-2xl border border-brand-200/70 bg-white p-10 text-center">

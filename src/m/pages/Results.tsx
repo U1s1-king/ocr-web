@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { errorText, examsApi, resultsApi, type ExamSummary, type ResultItem, type ResultSummary } from '../api'
 import { readCache, writeCache } from '../cache'
@@ -19,8 +19,6 @@ import {
   useLoad,
 } from '../ui'
 
-const FIRST = 20
-const BATCH = 50
 
 type Sort = 'time_desc' | 'time_asc' | 'score_desc' | 'score_asc'
 type Band = 'all' | 'a' | 'b' | 'c' | 'd'
@@ -65,7 +63,6 @@ export default function Results() {
   const [all, setAll] = useState<ResultItem[]>([])
   const [summary, setSummary] = useState<ResultSummary>({ resultCount: 0, averageScore: 0, maxScore: 0 })
   const [loading, setLoading] = useState(true)
-  const [streaming, setStreaming] = useState(false)
   const [error, setError] = useState('')
   const [sheet, setSheet] = useState(false)
   const [tick, setTick] = useState(0)
@@ -75,133 +72,60 @@ export default function Results() {
   const [draftSort, setDraftSort] = useState<Sort>(sort)
   const [draftQ, setDraftQ] = useState(q)
 
-  const genRef = useRef(0)
-  const accRef = useRef<ResultItem[]>([])
-  const sumRef = useRef<ResultSummary>({ resultCount: 0, averageScore: 0, maxScore: 0 })
-  const totalRef = useRef(0)
   const exams = useLoad<ExamSummary[]>(() => examsApi.list(), [], [])
 
   const examKey = examIds.join(',')
   const cacheKey = `results.stream.${examKey || 'all'}.${sort}`
 
   useEffect(() => {
-    const gen = genRef.current + 1
-    genRef.current = gen
     const useCache = tick === 0
     const cached = useCache
       ? readCache<{ items: ResultItem[]; summary: ResultSummary; total: number }>(cacheKey)
       : null
-    const startItems = cached?.items ?? []
-    accRef.current = startItems
-    sumRef.current = cached?.summary ?? { resultCount: 0, averageScore: 0, maxScore: 0 }
-    totalRef.current = cached?.total ?? 0
-    setAll(startItems)
-    setSummary(sumRef.current)
-    setTotal(totalRef.current)
-    setLoading(startItems.length === 0)
-    setError('')
-
-    if (cached && cached.total > 0 && startItems.length >= cached.total) {
-      setStreaming(false)
-      return
+    if (cached) {
+      setAll(cached.items)
+      setSummary(cached.summary)
+      setTotal(cached.total)
     }
-    setStreaming(true)
+    setLoading(!cached || cached.items.length === 0)
+    setError('')
+    let alive = true
 
     const order = {
       sortBy: [sort === 'time_desc' || sort === 'time_asc' ? 'uTime' : 'score'],
       sortDirection: [sort === 'time_asc' || sort === 'score_asc' ? 'asc' : 'desc'],
     }
-    const page = (offset: number, limit: number) =>
-      examIds.length
-        ? resultsApi.list({ offset, limit, ...order, examIds })
-        : resultsApi.listAll({ offset, limit, ...order })
+    const req = examIds.length
+      ? resultsApi.list({ offset: 0, limit: 10000, ...order, examIds })
+      : resultsApi.listAll({ offset: 0, limit: 10000, ...order })
 
-    /* 网络数据先进队列，再逐条冒出来，做到拉一条显示一条 */
-    const queue: ResultItem[] = []
-    let pumping = false
-    let stopped = false
-
-    const pump = () => {
-      if (pumping || stopped) return
-      pumping = true
-      const tickFn = () => {
-        if (stopped || gen !== genRef.current) {
-          pumping = false
-          return
-        }
-        if (!queue.length) {
-          pumping = false
-          return
-        }
-        const take = queue.splice(0, 3)
-        accRef.current = accRef.current.concat(take)
-        setAll(accRef.current)
-        window.setTimeout(tickFn, 16)
-      }
-      tickFn()
-    }
-
-    ;(async () => {
-      let offset = startItems.length
-      let failed = false
-      try {
-        for (;;) {
-          const first = offset === startItems.length
-          const limit = first ? FIRST : BATCH
-          const reqs = first ? [page(offset, limit)] : [page(offset, limit), page(offset + limit, limit)]
-          const rs = await Promise.all(reqs)
-          if (stopped || gen !== genRef.current) return
-          const r1 = rs[0]
-          const r2 = rs[1] as typeof r1 | undefined
-          const reported = r2?.total ?? r1.total ?? 0
-          const totalN = reported > 0 ? reported : totalRef.current
-          totalRef.current = totalN
-          sumRef.current = r1.summary
-          setTotal(totalN)
-          setSummary(r1.summary)
-          setLoading(false)
-          const batch = rs.reduce<ResultItem[]>((acc2, r) => acc2.concat(r.items), [])
-          if (!batch.length) break
-          queue.push(...batch)
-          pump()
-          offset += batch.length
-          if (reported > 0 && offset >= reported) break
-          if (r1.items.length < limit) break
-        }
-      } catch (err) {
-        if (stopped || gen !== genRef.current) return
+    req
+      .then((r) => {
+        if (!alive) return
+        setAll(r.items)
+        setSummary(r.summary)
+        setTotal(r.total > 0 ? r.total : r.items.length)
+        writeCache(cacheKey, {
+          items: r.items,
+          summary: r.summary,
+          total: r.total > 0 ? r.total : r.items.length,
+        })
+        setError('')
+      })
+      .catch((err) => {
+        if (!alive) return
         if (!cached) {
           setAll([])
           setSummary({ resultCount: 0, averageScore: 0, maxScore: 0 })
         }
         setError(errorText(err))
-        setLoading(false)
-      } finally {
-        if (!stopped && gen === genRef.current) {
-          const finish = () => {
-            if (stopped || gen !== genRef.current) return
-            if (queue.length) {
-              window.setTimeout(finish, 60)
-              return
-            }
-            if (failed) {
-              setStreaming(false)
-              return
-            }
-            writeCache(cacheKey, {
-              items: accRef.current,
-              summary: sumRef.current,
-              total: totalRef.current || accRef.current.length,
-            })
-            setStreaming(false)
-          }
-          finish()
-        }
-      }
-    })()
+      })
+      .finally(() => {
+        if (alive) setLoading(false)
+      })
 
     return () => {
-      stopped = true
+      alive = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cacheKey, tick])
@@ -343,22 +267,8 @@ export default function Results() {
         </div>
       )}
 
-      {/* 加载进度：边拉边显示 */}
-      {(streaming || all.length > 0) && !error && (
-        <div className="mo-card mt-3 !px-3.5 !py-2.5">
-          <div className="flex items-center justify-between text-[11px] font-extrabold">
-            <span className="text-ink-soft">
-              {streaming ? (total > 0 ? `正在加载 ${all.length} / ${total} 条` : `已加载 ${all.length} 条 · 后台继续`) : `已全部加载 ${all.length} 条`}
-            </span>
-            {streaming && <span className="text-brand-700">后台填充中</span>}
-          </div>
-          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-brand-50">
-            <div
-              className="h-full rounded-full bg-brand-500 transition-all duration-500"
-              style={{ width: `${total ? Math.min(100, (all.length / total) * 100) : 12}%` }}
-            />
-          </div>
-        </div>
+      {!loading && !error && all.length > 0 && (
+        <p className="mo-muted mt-2">已加载全部 {total || all.length} 条成绩</p>
       )}
 
       {/* 条件摘要 */}
