@@ -202,7 +202,11 @@ export default function Mine() {
           Icon={IcSpark}
           onClick={() => nav('/m/theme')}
         />
-        <MenuRow label="学生名单" sub="本机保存" Icon={IcUsers} onClick={() => nav('/m/students')} last />
+        <MenuRow label="学生名单" sub="后端优先，本机兜底" Icon={IcUsers} onClick={() => nav('/m/students')} />
+        <MenuRow label="识别指南" sub="拍照与定位要求" Icon={IcCheck} onClick={() => nav('/m/check/guide')} />
+        <MenuRow label="接口诊断" sub="日志、上传、检查" Icon={IcSliders} onClick={() => nav('/m/settings/diagnostics')} />
+        <MenuRow label="高级设置" sub="接口与环境" Icon={IcSliders} onClick={() => nav('/m/settings/advanced')} />
+        <MenuRow label="关于" sub={BRAND.version} Icon={IcSpark} onClick={() => nav('/m/settings/about')} last />
       </div>
 
       <div className="mt-5 text-center">

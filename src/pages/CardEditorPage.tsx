@@ -102,6 +102,7 @@ export default function CardEditorPage() {
   const [barcodeFormat, setBarcodeFormat] = useState<CardBarcodeFormat>('CODE128')
   const [barcodeValue, setBarcodeValue] = useState('')
   const [barcodeShowText, setBarcodeShowText] = useState(true)
+  const [answerOpen, setAnswerOpen] = useState(false)
   const [students, setStudents] = useState<Student[]>([])
 
   const past = useRef<CardDoc[]>([])
@@ -651,6 +652,20 @@ export default function CardEditorPage() {
     setPrimary(id2)
   }
 
+  function setAnswer(qid: string, value: string) {
+    const base = frontDoc ?? doc
+    if (!base) return
+    pushHistory()
+    const next = cloneDoc(nextFrontSafe())
+    next.content.answerKey = { ...(next.content.answerKey ?? {}), [qid]: value }
+    setFrontDoc(next)
+    setDirty(true)
+  }
+
+  function nextFrontSafe(): CardDoc {
+    return frontDoc ?? (doc as CardDoc)
+  }
+
   function applyGenerated(result: { doc: CardDoc; group: CardGroup }) {
     pushHistory()
     // 题目组自动排版：选择题插到选择题末尾，主观题顺延，放不下自动移到背面
@@ -1016,6 +1031,9 @@ export default function CardEditorPage() {
             </Button>
             <Button variant="ghost" size="sm" onClick={addBlock}>
               <PlusIcon className="h-3.5 w-3.5" /> 文本块
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setAnswerOpen(true)}>
+              答案键
             </Button>
             {sel.length > 1 && (
               <>
@@ -1715,6 +1733,45 @@ export default function CardEditorPage() {
           </Card>
         </div>
       </div>
+      {answerOpen && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/35 p-4" onClick={() => setAnswerOpen(false)}>
+          <div className="max-h-[80vh] w-full max-w-[560px] overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-[15px] font-black text-ink">标准答案键</h3>
+                <p className="mt-1 text-[10.5px] text-ink-soft/60">只对选择题生效；保存时会写入 paper JSON 的 answerKey。</p>
+              </div>
+              <button type="button" className="text-[12px] font-bold text-ink-soft" onClick={() => setAnswerOpen(false)}>关闭</button>
+            </div>
+            <div className="mt-3 space-y-2">
+              {(frontDoc?.content.questions ?? []).filter((q) => q.type === 'mark').map((q) => {
+                const choices = (q.choices ?? []).map((c) => c.value)
+                return (
+                  <div key={q.id} className="flex items-center gap-2 rounded-xl border border-brand-100 px-2.5 py-2">
+                    <span className="w-14 flex-none text-[11px] font-black text-ink-soft/60">第 {q.displayNumber ?? q.id} 题</span>
+                    <select
+                      className="min-w-0 flex-1 rounded-lg border border-brand-200 px-2 py-1 text-[11px]"
+                      value={frontDoc?.content.answerKey?.[q.id] ?? ''}
+                      onChange={(e) => setAnswer(q.id, e.target.value)}
+                    >
+                      <option value="">未设置</option>
+                      {choices.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <span className="text-[10px] text-ink-soft/50">{[...new Set(choices)].join('/') || '1/2/3/4'}</span>
+                  </div>
+                )
+              })}
+              {(frontDoc?.content.questions ?? []).every((q) => q.type !== 'mark') && (
+                <p className="py-6 text-center text-[11.5px] text-ink-soft/55">当前试卷没有选择题</p>
+              )}
+            </div>
+            <div className="mt-4 flex justify-end">
+              <Button onClick={() => setAnswerOpen(false)}>完成</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
@@ -1762,6 +1819,7 @@ function RulerV({ height, pxPerMm }: { height: number; pxPerMm: number }) {
           <span className="absolute left-0.5 top-0.5 text-[8px] leading-none text-neutral-400">{i * step}</span>
         </span>
       ))}
+
     </div>
   )
 }

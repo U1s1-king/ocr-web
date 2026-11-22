@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { ConfirmProvider } from './components/Confirm'
 import { Layout } from './components/Layout'
 const ResultsPage = lazy(() => import('./pages/ResultsPage'))
+const ResultDetailPage = lazy(() => import('./pages/ResultDetailPage'))
 const FilesPage = lazy(() => import('./pages/FilesPage'))
 const PapersPage = lazy(() => import('./pages/PapersPage'))
 const PaperPrintPage = lazy(() => import('./pages/PaperPrintPage'))
@@ -89,6 +90,7 @@ export default function App() {
             <Route path="check/guide" element={<CheckGuidePage />} />
 
             <Route path="results" element={<ResultsPage />} />
+            <Route path="results/:id" element={<ResultDetailPage />} />
             <Route path="files" element={<FilesPage />} />
 
             <Route path="papers" element={<PapersPage />} />
@@ -111,6 +113,7 @@ export default function App() {
 
           <Route path="papers/print" element={<PaperPrintPage />} />
           <Route path="papers/:id/print" element={<PaperPrintPage />} />
+          <Route path="m/papers/:id/print" element={<PaperPrintPage />} />
 
           {/* 移动端 v2 /m */}
           <Route path="m" element={<MobileShell />}>
@@ -121,6 +124,13 @@ export default function App() {
             <Route path="papers" element={<MPapers />} />
             <Route path="papers/:id" element={<MPaperDetail />} />
             <Route path="papers/:id/edit" element={<MCardEdit />} />
+            <Route path="papers/studio" element={<CardStudioPage />} />
+            <Route path="papers/barcode" element={<BarcodeStudioPage />} />
+            <Route path="papers/dsl" element={<DslStudioPage />} />
+            <Route path="settings/diagnostics" element={<DiagnosticsPage />} />
+            <Route path="settings/advanced" element={<AdvancedPage />} />
+            <Route path="settings/about" element={<AboutPage />} />
+            <Route path="check/guide" element={<CheckGuidePage />} />
             <Route path="results" element={<MResults />} />
             <Route path="results/:id" element={<MResultDetail />} />
             <Route path="capture" element={<MCapture />} />

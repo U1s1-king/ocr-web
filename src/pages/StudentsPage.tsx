@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { errorText } from '../api/client'
-import { addStudents, deleteStudents, updateStudents } from '../api/students'
+import { addStudents, deleteStudents, listStudents, updateStudents } from '../api/students'
 import type { Student } from '../api/types'
 import { useConfirm } from '../components/Confirm'
 import { useToast } from '../components/Toast'
@@ -39,8 +39,24 @@ export default function StudentsPage() {
   const confirm = useConfirm()
 
   const [rows, setRows] = useState<Student[]>([])
+  const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [adding, setAdding] = useState(false)
+
+  useEffect(() => {
+    let alive = true
+    listStudents()
+      .then((list) => { if (alive) setRows(list) })
+      .catch(() => {
+        if (!alive) return
+        try {
+          const raw = localStorage.getItem('ac.students')
+          if (raw) setRows(JSON.parse(raw) as Student[])
+        } catch { /* ignore */ }
+      })
+      .finally(() => { if (alive) setLoading(false) })
+    return () => { alive = false }
+  }, [])
 
   const [form, setForm] = useState<Student>({
     name: '',
@@ -204,7 +220,9 @@ export default function StudentsPage() {
           </div>
         )}
 
-        {rows.length === 0 ? (
+        {loading ? (
+          <p className="py-10 text-center text-[12px] font-semibold text-ink-soft/60">正在加载学生名单…</p>
+        ) : rows.length === 0 ? (
           <Empty title="还没有学生" hint="用上方表单单个添加，或导入 CSV 批量录入。" />
         ) : (
           <div className="overflow-x-auto">

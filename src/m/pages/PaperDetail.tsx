@@ -127,6 +127,12 @@ export default function PaperDetail() {
               onClick={() => setEditOpen(true)}
             />
             <ActionRow
+              icon={<IcFile style={{ fontSize: 17 }} />}
+              title="打印预览"
+              sub="查看正反面并按实际尺寸打印 / 存 PDF"
+              onClick={() => nav(`/m/papers/${pid}/print`)}
+            />
+            <ActionRow
               icon={<IcTarget style={{ fontSize: 17 }} />}
               title="批改测试"
               sub="选几张已上传的答题卡，只看识别结果"

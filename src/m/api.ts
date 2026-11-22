@@ -2,6 +2,7 @@ import { ApiError, errorText, getApiBase, getApiToken, request } from '../api/cl
 import { recordRequest } from '../lib/requestLog'
 import { clearCache } from './cache'
 import type { ExamContent } from '../api/types'
+import { listStudents } from '../api/students'
 
 export { ApiError, errorText }
 export type PaperJson = ExamContent
@@ -409,13 +410,19 @@ function uploadWithProgress<T>(path: string, file: File, onProgress?: (pct: numb
 /* ================= 学生 ================= */
 
 export const studentsApi = {
-  /** 文档只有 batch 增删改，没有列表接口：名单存在本机，避免请求 404 */
-  list: (): Promise<Student[]> => {
+  /** 后端为主、本地为辅：接口失败时继续使用本机名单 */
+  list: async (): Promise<Student[]> => {
     try {
-      const raw = localStorage.getItem('ac.students')
-      return Promise.resolve(raw ? (JSON.parse(raw) as Student[]) : [])
+      const remote = await listStudents({ limit: 10000 })
+      studentsApi.saveLocal(remote)
+      return remote
     } catch {
-      return Promise.resolve([])
+      try {
+        const raw = localStorage.getItem('ac.students')
+        return raw ? (JSON.parse(raw) as Student[]) : []
+      } catch {
+        return []
+      }
     }
   },
   saveLocal: (students: Student[]): void => {

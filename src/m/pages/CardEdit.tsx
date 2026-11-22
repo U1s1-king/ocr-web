@@ -9,6 +9,8 @@ import { BARCODE_FORMATS, validateBarcode } from '../../lib/card/barcode'
 import { ANSWER_CARD_BARCODE_AREA } from '../../lib/barcode/templates'
 import { cloneDoc, mm2u, paperMm, u2mm, type CardDoc, type CardGroup, type CardBarcode, type CardBarcodeFormat } from '../../lib/card/types'
 import { resolveDoc, savePaperDoc } from '../../lib/card/store'
+import { backAsDoc, createBackDoc, withBack } from '../../lib/card/back'
+import { reflowTwoPages } from '../../lib/card/reflow'
 import { Btn, Card, Page, Sheet } from '../ui'
 import { IcBack, IcLayers, IcPlus, IcSliders, IcTrash } from '../icons'
 
@@ -22,7 +24,14 @@ export default function CardEdit() {
   const nav = useNavigate()
   const toast = useToast()
 
-  const [doc, setDoc] = useState<CardDoc | null>(null)
+  const [frontDoc, setFrontDoc] = useState<CardDoc | null>(null)
+  const [backDoc, setBackDoc] = useState<CardDoc | null>(null)
+  const [side, setSide] = useState<'front' | 'back'>('front')
+  const doc = side === 'front' ? frontDoc : backDoc
+  const setDoc = (value: CardDoc | null) => {
+    if (side === 'front') setFrontDoc(value)
+    else setBackDoc(value)
+  }
 
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
@@ -56,7 +65,9 @@ export default function CardEdit() {
       .get(pid)
       .then((p) => {
         const resolved = resolveDoc(pid, p.paper as never, p.name)
-        setDoc(resolved.doc)
+        setFrontDoc(resolved.doc)
+        setBackDoc(resolved.doc.back ? backAsDoc(resolved.doc) : null)
+        setSide('front')
       })
       .catch((e) => setErr(e instanceof Error ? e.message : '载入失败'))
       .finally(() => setLoading(false))
@@ -278,7 +289,8 @@ export default function CardEdit() {
     if (!doc) return
     setSaving(true)
     try {
-      await savePaperDoc(pid, doc)
+      if (!frontDoc) return
+      await savePaperDoc(pid, withBack(frontDoc, backDoc))
       setDirty(false)
       toast('已保存到后端', 'ok')
     } catch (e) {
@@ -309,6 +321,32 @@ export default function CardEdit() {
       }
     >
       {err && <Card className="mb-3">{err}</Card>}
+
+      <div className="mb-2 flex flex-wrap items-center gap-1.5">
+        <Btn sm variant={side === 'front' ? undefined : 'ghost'} onClick={() => setSide('front')}>正面</Btn>
+        {backDoc && <Btn sm variant={side === 'back' ? undefined : 'ghost'} onClick={() => setSide('back')}>背面</Btn>}
+        {!backDoc ? (
+          <Btn sm variant="ghost" onClick={() => {
+            if (!frontDoc) return
+            const re = reflowTwoPages(frontDoc, createBackDoc(frontDoc, 'blank'))
+            setFrontDoc(re.front)
+            setBackDoc(re.back)
+            setSide('front')
+            setDirty(true)
+            toast(`已生成双面：${re.profile.label}`, 'ok')
+          }}>双面自动分页</Btn>
+        ) : (
+          <Btn sm variant="ghost" onClick={() => {
+            if (!frontDoc) return
+            const re = reflowTwoPages(frontDoc, backDoc)
+            setFrontDoc(re.front)
+            setBackDoc(re.back)
+            setSide('front')
+            setDirty(true)
+            toast(re.overflow ? '两页也放不下，请减少内容' : `已重新分页：${re.profile.label}`, re.overflow ? 'err' : 'ok')
+          }}>重新分页</Btn>
+        )}
+      </div>
 
       <div className="card-edit-viewport">
         <div className="card-edit-paper" style={{ width: page.w * pxPerMm, height: page.h * pxPerMm }}>

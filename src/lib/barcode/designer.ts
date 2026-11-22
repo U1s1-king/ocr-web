@@ -22,6 +22,8 @@ export interface BarcodeDesign {
   format: CardBarcodeFormat
   showText: boolean
   fields: BarcodeField[]
+  /** 学校/座号/考场号等画布固定文字；外部数据源有值时优先用数据源 */
+  staticText?: Record<string, string>
 }
 
 export interface BarcodePerson {
@@ -143,6 +145,7 @@ export function designForPreset(preset: LabelPreset): BarcodeDesign {
     format: 'CODE128',
     showText: false,
     fields,
+    staticText: { school: 'XX中学', seat: '01', room: '101', className: '' },
   }
 }
 

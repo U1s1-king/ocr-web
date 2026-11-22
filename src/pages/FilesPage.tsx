@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { errorText, filesApi, type FileItem } from '../m/api'
+import { errorText, examsApi, filesApi, type ExamSummary, type FileItem } from '../m/api'
+import { Button } from '../components/ui'
 
 const PAGE = 30
 
@@ -21,6 +22,12 @@ export default function FilesPage() {
   const [err, setErr] = useState('')
   const [msg, setMsg] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const [picked, setPicked] = useState<number[]>([])
+  const [exams, setExams] = useState<ExamSummary[]>([])
+  const [gradeOpen, setGradeOpen] = useState(false)
+  const [gradeExam, setGradeExam] = useState('')
+  const [grading, setGrading] = useState(false)
+  const [gradeMsg, setGradeMsg] = useState('')
 
   async function load(offset = 0, append = false) {
     if (append) setMore(true)
@@ -43,6 +50,10 @@ export default function FilesPage() {
     void load(0, false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [suffix])
+
+  useEffect(() => {
+    examsApi.list().then(setExams).catch(() => setExams([]))
+  }, [])
 
   async function onPick(file: File | null) {
     if (!file) return
@@ -80,6 +91,14 @@ export default function FilesPage() {
             className="rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 px-4 py-2 text-[12px] font-bold text-white shadow-soft transition hover:brightness-105"
           >
             上传文件
+          </button>
+          <button
+            type="button"
+            disabled={!picked.length}
+            onClick={() => setGradeOpen(true)}
+            className="rounded-xl border border-brand-300 bg-brand-50 px-4 py-2 text-[12px] font-bold text-brand-700 disabled:opacity-45"
+          >
+            批改到考试{picked.length ? ` (${picked.length})` : ''}
           </button>
         </div>
       </div>
@@ -137,6 +156,7 @@ export default function FilesPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-brand-100 bg-brand-50/60 text-[11px] font-bold text-ink-soft">
+                <th className="w-10 px-3 py-2.5"><input type="checkbox" checked={items.length > 0 && picked.length === items.length} onChange={(e) => setPicked(e.target.checked ? items.map((f) => f.fileId) : [])} /></th>
                 <th className="px-4 py-2.5 text-left">文件ID</th>
                 <th className="px-4 py-2.5 text-left">名称</th>
                 <th className="px-4 py-2.5 text-left">类型</th>
@@ -147,6 +167,7 @@ export default function FilesPage() {
             <tbody>
               {items.map((f) => (
                 <tr key={f.fileId} className="border-b border-brand-50 text-[12px] hover:bg-brand-50/40">
+                  <td className="px-3 py-2.5"><input type="checkbox" checked={picked.includes(f.fileId)} onChange={(e) => setPicked((cur) => e.target.checked ? [...cur, f.fileId] : cur.filter((x) => x !== f.fileId))} /></td>
                   <td className="px-4 py-2.5 font-black text-ink-soft/50">{f.fileId}</td>
                   <td className="max-w-[280px] truncate px-4 py-2.5 font-semibold text-ink">{f.name}</td>
                   <td className="px-4 py-2.5 uppercase text-ink-soft/70">{f.suffix || '—'}</td>
@@ -158,6 +179,42 @@ export default function FilesPage() {
           </table>
         )}
       </div>
+
+      {gradeMsg && <p className="rounded-xl bg-emerald-50 px-3 py-2 text-[11.5px] font-semibold text-emerald-700">{gradeMsg}</p>}
+
+      {gradeOpen && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/35 p-4" onClick={() => !grading && setGradeOpen(false)}>
+          <div className="w-full max-w-[420px] rounded-2xl bg-white p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-[14px] font-black text-ink">批改到考试</h3>
+            <p className="mt-1 text-[11px] text-ink-soft/65">已选 {picked.length} 个文件；批改结果会写入该考试的成绩。</p>
+            <select className="mt-3 w-full rounded-xl border border-brand-200 px-3 py-2 text-[12px]" value={gradeExam} onChange={(e) => setGradeExam(e.target.value)}>
+              <option value="">选择考试</option>
+              {exams.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+            </select>
+            <div className="mt-4 flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setGradeOpen(false)} disabled={grading}>取消</Button>
+              <Button
+                disabled={!gradeExam || grading}
+                onClick={async () => {
+                  setGrading(true)
+                  try {
+                    const r = await examsApi.grade(Number(gradeExam), picked)
+                    setGradeMsg(`批改完成：成功 ${r.successCount}，失败 ${r.failureCount}，总分 ${r.totalScore}`)
+                    setPicked([])
+                    setGradeOpen(false)
+                  } catch (e) {
+                    setGradeMsg(errorText(e))
+                  } finally {
+                    setGrading(false)
+                  }
+                }}
+              >
+                {grading ? '批改中…' : '开始批改'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {items.length < total && (
         <button

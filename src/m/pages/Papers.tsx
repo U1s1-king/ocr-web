@@ -73,7 +73,7 @@ export default function Papers() {
   }
 
   function useTemplate(t: CardTemplate) {
-    nav(`/papers/studio?tpl=${encodeURIComponent(t.id)}`)
+    nav(`/m/papers/studio?tpl=${encodeURIComponent(t.id)}`)
   }
 
   return (
@@ -100,9 +100,9 @@ export default function Papers() {
 
       <div className="mo-quick mt-3">
         {[
-          { label: '答题卡制作', to: '/papers/studio', Icon: IcGrid },
-          { label: '条形码制作', to: '/papers/templates', Icon: IcLayers },
-          { label: '文本出卡', to: '/papers/dsl', Icon: IcSpark },
+          { label: '答题卡制作', to: '/m/papers/studio', Icon: IcGrid },
+          { label: '条形码制作', to: '/m/papers/barcode', Icon: IcLayers },
+          { label: '文本出卡', to: '/m/papers/dsl', Icon: IcSpark },
         ].map(({ label, to, Icon }) => (
           <button key={to} type="button" className="mo-quick-item" onClick={() => nav(to)}>
             <span className="mo-quick-ico"><Icon style={{ fontSize: 19 }} /></span>
@@ -311,7 +311,7 @@ export default function Papers() {
               <p className="mo-muted mt-0.5">选模板后可调题量、换纸型、精调坐标，再保存为试卷或打印。</p>
             </div>
           </div>
-          <button type="button" className="mo-card mt-3 flex w-full items-center gap-3 text-left" onClick={() => nav('/papers/dsl')}>
+          <button type="button" className="mo-card mt-3 flex w-full items-center gap-3 text-left" onClick={() => nav('/m/papers/dsl')}>
             <span className="grid h-10 w-10 flex-none place-items-center rounded-[13px] bg-brand-100 text-brand-700">
               <IcLayers style={{ fontSize: 18 }} />
             </span>

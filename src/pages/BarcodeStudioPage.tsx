@@ -95,10 +95,10 @@ function parseCsv(text: string): { headers: string[]; rows: Record<string, strin
   }
 }
 
-function fieldValue(field: BarcodeField, person: BarcodePerson): string {
+function fieldValue(field: BarcodeField, person: BarcodePerson, staticText?: Record<string, string>): string {
   if (field.key === 'custom') return field.text || ''
   if (field.key === 'barcode') return person.candidateNumber || ''
-  return person[field.key] || ''
+  return person[field.key] || staticText?.[field.key] || ''
 }
 
 /** 条形码制作：单面标签自由设计 + 批量数据源 */
@@ -109,8 +109,6 @@ export default function BarcodeStudioPage() {
   const [selected, setSelected] = useState<string | null>(null)
   const [people, setPeople] = useState<BarcodePerson[]>([])
   const [peopleSource, setPeopleSource] = useState<'students' | 'import' | 'sample'>('students')
-  const [schoolName, setSchoolName] = useState('XX中学')
-  const [defaultRoom, setDefaultRoom] = useState('101')
   const [q, setQ] = useState('')
   const [importInfo, setImportInfo] = useState('')
   const [importError, setImportError] = useState('')
@@ -128,14 +126,14 @@ export default function BarcodeStudioPage() {
   useEffect(() => {
     studentsApi.list().then((list) => {
       setPeople(
-        list.map((s, i) => ({
+        list.map((s) => ({
           ...DEFAULT_PERSON,
-          school: schoolName,
+          school: '',
           name: s.name,
           candidateNumber: s.candidateNumber || '',
           className: s.className || '',
-          seat: String(i + 1).padStart(2, '0'),
-          room: defaultRoom,
+          seat: '',
+          room: '',
         })),
       )
     }).catch(() => setPeople([]))
@@ -310,14 +308,14 @@ export default function BarcodeStudioPage() {
     setPeopleSource('students')
     studentsApi.list().then((list) => {
       setPeople(
-        list.map((s, i) => ({
+        list.map((s) => ({
           ...DEFAULT_PERSON,
-          school: schoolName,
+          school: '',
           name: s.name,
           candidateNumber: s.candidateNumber || '',
           className: s.className || '',
-          seat: String(i + 1).padStart(2, '0'),
-          room: defaultRoom,
+          seat: '',
+          room: '',
         })),
       )
     })
@@ -328,7 +326,7 @@ export default function BarcodeStudioPage() {
   }
 
   function renderField(field: BarcodeField, person: BarcodePerson, interactive: boolean) {
-    const value = fieldValue(field, person)
+    const value = fieldValue(field, person, design.staticText)
     return (
       <div
         key={field.id}
@@ -439,11 +437,6 @@ export default function BarcodeStudioPage() {
             {importInfo && <p className="mt-1.5 text-[9.5px] leading-relaxed text-emerald-700">{importInfo}</p>}
             {importError && <p className="mt-1.5 rounded-lg bg-red-50 px-2 py-1.5 text-[9.5px] text-red-600">{importError}</p>}
 
-            <div className="mt-2 grid grid-cols-2 gap-1.5">
-              <Field label="默认学校"><input className={inputCls} value={schoolName} onChange={(e) => setSchoolName(e.target.value)} /></Field>
-              <Field label="默认考场"><input className={inputCls} value={defaultRoom} onChange={(e) => setDefaultRoom(e.target.value)} /></Field>
-            </div>
-
             <input className={`${inputCls} mt-2`} placeholder="搜索姓名 / 座号 / 考场" value={q} onChange={(e) => setQ(e.target.value)} />
             <div className="mt-2 max-h-[300px] space-y-1 overflow-y-auto">
               {filtered.map((p, i) => (
@@ -529,6 +522,15 @@ export default function BarcodeStudioPage() {
                     </div>
                     {selectedField.key === 'custom' && (
                       <Field label="自定义文字"><input className={inputCls} value={selectedField.text ?? ''} onChange={(e) => patchField(selectedField.id, { text: e.target.value })} /></Field>
+                    )}
+                    {(['school', 'seat', 'room', 'className'] as const).includes(selectedField.key as never) && (
+                      <Field label="固定文字（可手填）">
+                        <input
+                          className={inputCls}
+                          value={design.staticText?.[selectedField.key] ?? ''}
+                          onChange={(e) => patchDesign({ staticText: { ...(design.staticText ?? {}), [selectedField.key]: e.target.value } })}
+                        />
+                      </Field>
                     )}
                   </div>
                 ) : (

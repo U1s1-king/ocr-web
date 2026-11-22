@@ -1,17 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { errorText } from '../api/client'
-import { checkExam, getExam } from '../api/exams'
+import { papersApi, type CheckItem, type CheckResponse } from '../m/api'
 import { uploadFiles } from '../api/files'
-import type { CheckBatchResult, CheckFileResult, UploadedFile } from '../api/types'
+import type { UploadedFile } from '../api/types'
 import { useToast } from '../components/Toast'
 import { CheckIcon, DownloadIcon, ImageIcon, UploadIcon } from '../components/icons'
 import { Badge, Button, Card, Field, SectionTitle, Spinner, inputCls } from '../components/ui'
-import { isBlank } from '../lib/exam'
 import { saveScan, type OfflineScan } from '../lib/offlineHistory'
 import { scanFromCheckItem } from '../lib/scanRecord'
 import { EXPORT_FORMATS, downloadScans } from '../lib/export'
-import { readIndex } from './ExamsPage'
 
 export default function CheckPage() {
   const toast = useToast()
@@ -23,11 +21,10 @@ export default function CheckPage() {
   const [uploading, setUploading] = useState(false)
   const [uploaded, setUploaded] = useState<UploadedFile[]>([])
   const [checking, setChecking] = useState(false)
-  const [result, setResult] = useState<CheckBatchResult | null>(null)
+  const [result, setResult] = useState<CheckResponse | null>(null)
   const [saved, setSaved] = useState<OfflineScan[]>([])
   const [activeFile, setActiveFile] = useState<number | null>(null)
 
-  const index = readIndex()
 
   useEffect(() => {
     const id = Number(examId)
@@ -38,8 +35,8 @@ export default function CheckPage() {
     let alive = true
     void (async () => {
       try {
-        const e = await getExam(id)
-        if (alive) setExamName(isBlank(e.exam) ? `${e.name}（未配置）` : e.name)
+        const p = await papersApi.get(id)
+        if (alive) setExamName(p.name)
       } catch {
         if (alive) setExamName('')
       }
@@ -86,7 +83,7 @@ export default function CheckPage() {
         setUploading(false)
       }
       const ids = pool.slice(0, 50).map((u) => u.fileId)
-      const r = await checkExam(id, ids)
+      const r = await papersApi.check(id, ids)
       setResult(r)
       setActiveFile(r.results[0]?.fileId ?? null)
       // 整份结果写入本机历史，便于回看与导出
@@ -94,7 +91,7 @@ export default function CheckPage() {
       for (const item of r.results) {
         if (!item.success) continue
         const scan = scanFromCheckItem(item, {
-          paperId: id,
+          paperId: r.paperId,
           paperName: examName || `试卷 #${id}`,
           title: `${examName || `试卷 #${id}`} · 文件 #${item.fileId}`,
         })
@@ -135,25 +132,9 @@ export default function CheckPage() {
                 className={inputCls}
                 inputMode="numeric"
                 value={examId}
-                placeholder="例如 1"
+                placeholder="在试卷管理页查看"
                 onChange={(e) => setExamId(e.target.value.replace(/[^\d]/g, ''))}
               />
-              {index.length > 0 && (
-                <select
-                  className={`${inputCls} max-w-40`}
-                  value=""
-                  onChange={(e) => {
-                    if (e.target.value) setExamId(e.target.value)
-                  }}
-                >
-                  <option value="">本机记录…</option>
-                  {index.map((x) => (
-                    <option key={x.id} value={x.id}>
-                      #{x.id} {x.name}
-                    </option>
-                  ))}
-                </select>
-              )}
             </div>
           </Field>
           <Field label="试卷名">
@@ -281,7 +262,7 @@ function StatCard({ label, value, tone }: { label: string; value: number; tone: 
   )
 }
 
-function FileDetail({ r }: { r: CheckFileResult }) {
+function FileDetail({ r }: { r: CheckItem }) {
   if (!r.success) {
     return (
       <Card className="border-red-200 bg-red-50/50">
@@ -324,7 +305,7 @@ function FileDetail({ r }: { r: CheckFileResult }) {
             }`}
           >
             <span className="w-14 shrink-0 truncate font-mono text-[10px] text-ink-soft/70">{qid}</span>
-            <Badge tone={m.type === 'mark' ? 'brand' : 'mute'}>{m.type === 'mark' ? m.mode ?? 'mark' : '主观'}</Badge>
+            <Badge tone={m.type === 'mark' ? 'brand' : 'mute'}>{m.type === 'mark' ? (m as { mode?: string }).mode ?? 'mark' : '主观'}</Badge>
             <span className="font-semibold text-ink">{m.answer ?? '—'}</span>
             {m.expected && m.expected !== m.answer && (
               <span className="text-[10px] text-ink-soft/50">应为 {m.expected}</span>
