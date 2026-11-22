@@ -7,9 +7,7 @@ const ResultDetailPage = lazy(() => import('./pages/ResultDetailPage'))
 const FilesPage = lazy(() => import('./pages/FilesPage'))
 const PapersPage = lazy(() => import('./pages/PapersPage'))
 const PaperPrintPage = lazy(() => import('./pages/PaperPrintPage'))
-const CardStudioPage = lazy(() => import('./pages/CardStudioPage'))
 const BarcodeStudioPage = lazy(() => import('./pages/BarcodeStudioPage'))
-const DslStudioPage = lazy(() => import('./pages/DslStudioPage'))
 const CardEditorPage = lazy(() => import('./pages/CardEditorPage'))
 import { Splash } from './components/Splash'
 import { ServerDownDialog } from './components/ServerDownDialog'
@@ -55,6 +53,10 @@ const MBatches = lazy(() => import('./m/pages/Batches'))
 const MReviews = lazy(() => import('./m/pages/Reviews'))
 const MReviewDetail = lazy(() => import('./m/pages/ReviewDetail'))
 const MLogs = lazy(() => import('./m/pages/Logs'))
+const MBarcodeStudio = lazy(() => import('./m/pages/BarcodeStudio'))
+const MCardStudio = lazy(() => import('./m/pages/CardStudio'))
+const MDslStudio = lazy(() => import('./m/pages/DslStudio'))
+const MPrint = lazy(() => import('./m/pages/MobilePrint'))
 
 export default function App() {
   return (
@@ -94,10 +96,10 @@ export default function App() {
             <Route path="files" element={<FilesPage />} />
 
             <Route path="papers" element={<PapersPage />} />
-            <Route path="papers/studio" element={<CardStudioPage />} />
-            <Route path="papers/dsl" element={<DslStudioPage />} />
+            <Route path="papers/studio" element={<MCardStudio />} />
+            <Route path="papers/dsl" element={<MDslStudio />} />
             <Route path="papers/templates" element={<BarcodeStudioPage />} />
-            <Route path="papers/barcode" element={<BarcodeStudioPage />} />
+            <Route path="papers/barcode" element={<MBarcodeStudio />} />
             <Route path="papers/local/edit" element={<CardEditorPage />} />
             <Route path="papers/:id/edit" element={<CardEditorPage />} />
 
@@ -113,7 +115,7 @@ export default function App() {
 
           <Route path="papers/print" element={<PaperPrintPage />} />
           <Route path="papers/:id/print" element={<PaperPrintPage />} />
-          <Route path="m/papers/:id/print" element={<PaperPrintPage />} />
+          <Route path="m/papers/:id/print" element={<MPrint />} />
 
           {/* 移动端 v2 /m */}
           <Route path="m" element={<MobileShell />}>
@@ -124,9 +126,9 @@ export default function App() {
             <Route path="papers" element={<MPapers />} />
             <Route path="papers/:id" element={<MPaperDetail />} />
             <Route path="papers/:id/edit" element={<MCardEdit />} />
-            <Route path="papers/studio" element={<CardStudioPage />} />
-            <Route path="papers/barcode" element={<BarcodeStudioPage />} />
-            <Route path="papers/dsl" element={<DslStudioPage />} />
+            <Route path="papers/studio" element={<MCardStudio />} />
+            <Route path="papers/barcode" element={<MBarcodeStudio />} />
+            <Route path="papers/dsl" element={<MDslStudio />} />
             <Route path="settings/diagnostics" element={<DiagnosticsPage />} />
             <Route path="settings/advanced" element={<AdvancedPage />} />
             <Route path="settings/about" element={<AboutPage />} />

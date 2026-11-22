@@ -425,6 +425,14 @@ export const studentsApi = {
       }
     }
   },
+  listLocal: (): Student[] => {
+    try {
+      const raw = localStorage.getItem('ac.students')
+      return raw ? (JSON.parse(raw) as Student[]) : []
+    } catch {
+      return []
+    }
+  },
   saveLocal: (students: Student[]): void => {
     localStorage.setItem('ac.students', JSON.stringify(students))
   },
