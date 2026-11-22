@@ -91,6 +91,13 @@ export default function PapersPage() {
           </button>
           <button
             type="button"
+            onClick={() => nav('/papers/bundle')}
+            className="rounded-xl border border-brand-300 bg-brand-50 px-4 py-2 text-[12px] font-bold text-brand-700"
+          >
+            统一试卷预览
+          </button>
+          <button
+            type="button"
             onClick={() => nav('/papers/studio')}
             className="rounded-xl border border-brand-300 bg-brand-50 px-4 py-2 text-[12px] font-bold text-brand-700"
           >

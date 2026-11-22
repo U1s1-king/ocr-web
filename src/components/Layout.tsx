@@ -19,6 +19,7 @@ import { useVisualPrefs } from '../lib/visualPrefs'
 const SECONDARY: Record<string, { to: string; label: string }[]> = {
   papers: [
     { to: '/papers', label: '试卷库' },
+    { to: '/papers/bundle', label: '统一试卷预览' },
     { to: '/papers/studio', label: '答题卡制作' },
     { to: '/papers/templates', label: '条形码制作' },
 

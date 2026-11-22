@@ -7,6 +7,7 @@ const ResultDetailPage = lazy(() => import('./pages/ResultDetailPage'))
 const FilesPage = lazy(() => import('./pages/FilesPage'))
 const PapersPage = lazy(() => import('./pages/PapersPage'))
 const PaperPrintPage = lazy(() => import('./pages/PaperPrintPage'))
+const PaperBundlePage = lazy(() => import('./pages/PaperBundlePage'))
 const BarcodeStudioPage = lazy(() => import('./pages/BarcodeStudioPage'))
 const CardStudioPage = lazy(() => import('./pages/CardStudioPage'))
 const DslStudioPage = lazy(() => import('./pages/DslStudioPage'))
@@ -102,6 +103,7 @@ export default function App() {
             <Route path="files" element={<FilesPage />} />
 
             <Route path="papers" element={<PapersPage />} />
+            <Route path="papers/bundle" element={<PaperBundlePage />} />
             <Route path="papers/studio" element={<CardStudioPage />} />
             <Route path="papers/dsl" element={<DslStudioPage />} />
             <Route path="papers/templates" element={<BarcodeStudioPage />} />
