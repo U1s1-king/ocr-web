@@ -403,3 +403,18 @@ python deploy/cloudflare/deploy_pages.py     # 项目 ocr-web，产出 *.pages.d
   - 精调页支持标准答案键
   - 答题卡检查改用 `POST /papers/{id}/check`
 - 移动端答题卡编辑器支持双面自动分页
+
+
+## 2026-11 固定后端地址与体感升级
+
+- 默认后端地址固定为：`https://jstestapi.bakabaka.dpdns.org`
+  - 前端 `DEFAULT_BASE`
+  - Pages Functions 上游 `UPSTREAM`
+  - Vite 开发代理目标
+- 移动端补充原生简化页：高级选项、接口诊断、关于、识别指南、学生编辑。
+- 体感优化：
+  - 移动端底部导航按压回弹 + 轻触震动
+  - 页面滚动 overscroll 收敛、触控不选中
+  - 列表/卡片/快捷入口按压反馈
+  - 画布拖动区域 touch-action 处理
+  - 全局 tap highlight 去除、平滑滚动、减少布局抖动

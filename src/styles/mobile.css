@@ -1413,3 +1413,29 @@
   border-radius: 12px;
   background: rgba(255,255,255,.14);
 }
+
+/* 体感优化：跟手滚动、按压回弹、底部导航触感 */
+.mo-scroll {
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+.mo-page { overscroll-behavior-y: contain; }
+.mo-dock-item {
+  transition: transform .16s var(--mo-ease), color .16s, opacity .16s;
+  -webkit-tap-highlight-color: transparent;
+}
+.mo-dock-item:active { transform: translateY(1px) scale(.93); opacity: .86; }
+.mo-dock-ico { transition: transform .2s var(--mo-ease), background .2s; }
+.mo-dock-item[data-active='true'] .mo-dock-ico { transform: translateY(-1px); }
+.mo-list-row, .mo-feed, .mo-tool, .mhome-module, .mhome-quick-item {
+  transition: transform .16s var(--mo-ease), background .16s, opacity .16s;
+}
+.mo-list-row:active, .mo-tool:active { transform: scale(.992); }
+.mo-card { transition: background .16s, border-color .16s, transform .16s var(--mo-ease); }
+.mo-card-tap:active { transform: scale(.995); }
+.mo-scroll, .card-edit-viewport, .mo-barcode-canvas { scroll-behavior: smooth; }
+.barcode-design-canvas, .mo-barcode-canvas, .card-edit-viewport { touch-action: none; }
+@media (prefers-reduced-motion: reduce) {
+  .mo-scroll, .mo-dock-item, .mo-list-row, .mo-feed, .mo-tool { scroll-behavior: auto; transition: none; }
+}

@@ -5,7 +5,7 @@ const LS_BASE = 'ac.apiBase'
 const LS_TOKEN = 'ac.apiToken'
 
 /** 默认指向当前部署的隧道地址；改了地址的用户仍然优先用本机保存的值 */
-export const DEFAULT_BASE = 'https://diffs-entered-goat-formula.trycloudflare.com'
+export const DEFAULT_BASE = 'https://jstestapi.bakabaka.dpdns.org'
 
 const ENV_BASE = import.meta.env.VITE_API_BASE ?? ''
 const ENV_TOKEN = import.meta.env.VITE_API_TOKEN ?? ''

@@ -1520,3 +1520,20 @@ header { z-index: 20; }
   .barcode-print-root .bl-field.is-selected { outline: none; background: none; }
   .barcode-print-root .bl-resize { display: none; }
 }
+
+/* 体感优化：统一触控/滚动/按压反馈 */
+html {
+  -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+}
+body { overscroll-behavior-y: none; }
+button, a, [role='button'], .mo-dock-item, .mo-card-tap {
+  touch-action: manipulation;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+@media (hover: hover) and (pointer: fine) {
+  .anim-lift:hover, .an-lift:hover { translate: 0 -1px; }
+}

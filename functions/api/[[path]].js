@@ -3,7 +3,7 @@
 // 跨域静态站点直接调用本代理（已带 CORS）。
 // 临时切换后端：改 UPSTREAM、配环境变量 API_ORIGIN，或前端设置接口地址。
 
-const UPSTREAM = 'https://diffs-entered-goat-formula.trycloudflare.com'
+const UPSTREAM = 'https://jstestapi.bakabaka.dpdns.org'
 
 const PASS_HEADERS = [
   'accept',

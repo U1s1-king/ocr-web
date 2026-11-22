@@ -8,7 +8,7 @@ import tailwindcss from '@tailwindcss/vite'
  */
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '')
-  const target = env.VITE_API_TARGET || 'https://diffs-entered-goat-formula.trycloudflare.com'
+  const target = env.VITE_API_TARGET || 'https://jstestapi.bakabaka.dpdns.org'
   const base = env.VITE_BASE || '/'
   const proxy = {
     '/api': {

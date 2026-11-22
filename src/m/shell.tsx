@@ -40,6 +40,10 @@ export default function MobileShell() {
   const [searching, setSearching] = useState(false)
   const visual = useVisualPrefs()
 
+  function haptic() {
+    try { navigator.vibrate?.(6) } catch { /* ignore */ }
+  }
+
   useEffect(() => initTheme(), [])
 
   useEffect(() => {
@@ -64,7 +68,7 @@ export default function MobileShell() {
       <div className="mo-dock-wrap">
         <nav className="mo-dock" aria-label="底部导航">
           {TABS.map(({ to, label, Icon, match }) => (
-            <DockItem key={to} label={label} active={match(pathname)} onClick={() => nav(to)}>
+            <DockItem key={to} label={label} active={match(pathname)} onClick={() => { haptic(); nav(to) }}>
               <Icon style={{ fontSize: 18 }} />
             </DockItem>
           ))}
@@ -73,7 +77,7 @@ export default function MobileShell() {
           type="button"
           className="mo-dock-search"
           aria-label="搜索功能与文件"
-          onClick={() => setSearching(true)}
+          onClick={() => { haptic(); setSearching(true) }}
         >
           <IcSearch style={{ fontSize: 20 }} />
         </button>

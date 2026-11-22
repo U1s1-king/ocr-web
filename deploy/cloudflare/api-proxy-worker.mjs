@@ -1,7 +1,7 @@
 // 独立 Cloudflare Worker：把 /api/* 同源代理到后端隧道，并补上 CORS。
 // 用途：Cloudflare Pages 直接上传（不经过 Git 构建）时不会带 functions，
 // 所以前端通过这个 Worker 访问接口；Git 部署仍可用 functions/api/[[path]].js。
-const UPSTREAM = 'https://her-expo-oasis-formatting.trycloudflare.com'
+const UPSTREAM = 'https://jstestapi.bakabaka.dpdns.org'
 
 const PASS_HEADERS = ['accept', 'accept-language', 'authorization', 'client-cookie', 'content-type', 'user-agent']
 const DROP_HEADERS = ['content-length', 'content-encoding', 'transfer-encoding', 'connection', 'host']
