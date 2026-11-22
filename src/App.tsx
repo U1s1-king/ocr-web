@@ -8,6 +8,8 @@ const FilesPage = lazy(() => import('./pages/FilesPage'))
 const PapersPage = lazy(() => import('./pages/PapersPage'))
 const PaperPrintPage = lazy(() => import('./pages/PaperPrintPage'))
 const BarcodeStudioPage = lazy(() => import('./pages/BarcodeStudioPage'))
+const CardStudioPage = lazy(() => import('./pages/CardStudioPage'))
+const DslStudioPage = lazy(() => import('./pages/DslStudioPage'))
 const CardEditorPage = lazy(() => import('./pages/CardEditorPage'))
 import { Splash } from './components/Splash'
 import { ServerDownDialog } from './components/ServerDownDialog'
@@ -57,6 +59,10 @@ const MBarcodeStudio = lazy(() => import('./m/pages/BarcodeStudio'))
 const MCardStudio = lazy(() => import('./m/pages/CardStudio'))
 const MDslStudio = lazy(() => import('./m/pages/DslStudio'))
 const MPrint = lazy(() => import('./m/pages/MobilePrint'))
+const MAdvanced = lazy(() => import('./m/pages/Advanced'))
+const MDiagnostics = lazy(() => import('./m/pages/Diagnostics'))
+const MAbout = lazy(() => import('./m/pages/About'))
+const MCheckGuide = lazy(() => import('./m/pages/CheckGuide'))
 
 export default function App() {
   return (
@@ -96,10 +102,10 @@ export default function App() {
             <Route path="files" element={<FilesPage />} />
 
             <Route path="papers" element={<PapersPage />} />
-            <Route path="papers/studio" element={<MCardStudio />} />
-            <Route path="papers/dsl" element={<MDslStudio />} />
+            <Route path="papers/studio" element={<CardStudioPage />} />
+            <Route path="papers/dsl" element={<DslStudioPage />} />
             <Route path="papers/templates" element={<BarcodeStudioPage />} />
-            <Route path="papers/barcode" element={<MBarcodeStudio />} />
+            <Route path="papers/barcode" element={<BarcodeStudioPage />} />
             <Route path="papers/local/edit" element={<CardEditorPage />} />
             <Route path="papers/:id/edit" element={<CardEditorPage />} />
 
@@ -129,10 +135,10 @@ export default function App() {
             <Route path="papers/studio" element={<MCardStudio />} />
             <Route path="papers/barcode" element={<MBarcodeStudio />} />
             <Route path="papers/dsl" element={<MDslStudio />} />
-            <Route path="settings/diagnostics" element={<DiagnosticsPage />} />
-            <Route path="settings/advanced" element={<AdvancedPage />} />
-            <Route path="settings/about" element={<AboutPage />} />
-            <Route path="check/guide" element={<CheckGuidePage />} />
+            <Route path="settings/diagnostics" element={<MDiagnostics />} />
+            <Route path="settings/advanced" element={<MAdvanced />} />
+            <Route path="settings/about" element={<MAbout />} />
+            <Route path="check/guide" element={<MCheckGuide />} />
             <Route path="results" element={<MResults />} />
             <Route path="results/:id" element={<MResultDetail />} />
             <Route path="capture" element={<MCapture />} />

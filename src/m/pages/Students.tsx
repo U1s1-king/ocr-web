@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useConfirm } from '../../components/Confirm'
 import { useToast } from '../../components/Toast'
 import { studentsApi, type Student } from '../api'
-import { IcAlert, IcPlus, IcSearch, IcSpark, IcTrash, IcUsers, IcX } from '../icons'
+import { IcAlert, IcPen, IcPlus, IcSearch, IcSpark, IcTrash, IcUsers, IcX } from '../icons'
 import {
   Btn,
   Card,
@@ -25,6 +25,8 @@ export default function Students() {
   const [q, setQ] = useState('')
   const [picked, setPicked] = useState<number[]>([])
   const [importOpen, setImportOpen] = useState(false)
+  const [editing, setEditing] = useState<Student | null>(null)
+  const [savingEdit, setSavingEdit] = useState(false)
   const [text, setText] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -60,6 +62,25 @@ export default function Students() {
       toast(err instanceof Error ? err.message : '导入失败', 'err')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function saveEdit() {
+    if (!editing || editing.id === undefined) return
+    if (!editing.name.trim()) {
+      toast('姓名不能为空', 'err')
+      return
+    }
+    setSavingEdit(true)
+    try {
+      await studentsApi.update([editing])
+      setEditing(null)
+      list.reload()
+      toast('学生资料已更新', 'ok')
+    } catch (e) {
+      toast(e instanceof Error ? e.message : '更新失败', 'err')
+    } finally {
+      setSavingEdit(false)
     }
   }
 
@@ -161,16 +182,29 @@ export default function Students() {
                   title={s.name}
                   sub={`${s.candidateNumber ?? '无考号'} · ${s.className ?? '未分班'}${s.grade ? ` · ${s.grade}` : ''}`}
                   right={
-                    <button
-                      type="button"
-                      aria-label="选择"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        toggle(s.id, i)
-                      }}
-                    >
-                      <CheckDot on={picked.includes(key)} />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        aria-label="编辑"
+                        className="rounded-lg p-1 text-brand-700/70"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setEditing(s)
+                        }}
+                      >
+                        <IcPen style={{ fontSize: 14 }} />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="选择"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggle(s.id, i)
+                        }}
+                      >
+                        <CheckDot on={picked.includes(key)} />
+                      </button>
+                    </div>
                   }
                   onClick={() => toggle(s.id, i)}
                 />
@@ -233,6 +267,35 @@ export default function Students() {
             <IcX style={{ fontSize: 12 }} /> 清空
           </button>
         </div>
+      </Sheet>
+
+      <Sheet
+        open={Boolean(editing)}
+        onClose={() => setEditing(null)}
+        title="编辑学生"
+        footer={<Btn block disabled={savingEdit} onClick={() => void saveEdit()}>{savingEdit ? '保存中…' : '保存修改'}</Btn>}
+      >
+        {editing && (
+          <div className="space-y-3">
+            {([
+              ['name', '姓名'],
+              ['candidateNumber', '考号'],
+              ['className', '班级'],
+              ['grade', '年级'],
+              ['major', '专业'],
+            ] as const).map(([k, label]) => (
+              <label key={k} className="mo-field">
+                <span className="mo-field-label">{label}</span>
+                <input
+                  className="mo-input"
+                  value={(editing[k] as string | undefined) ?? ''}
+                  onChange={(e) => setEditing({ ...editing, [k]: e.target.value })}
+                />
+              </label>
+            ))}
+            <p className="mo-muted">修改后会同步到后端学生库；条形码只使用姓名/考号/班级。</p>
+          </div>
+        )}
       </Sheet>
 
       {list.demo && (
