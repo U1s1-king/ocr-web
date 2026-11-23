@@ -22,8 +22,9 @@
 - 页码由 `page` 字段决定，不依赖数组顺序
 - 同组内页码不能重复
 - `answerCard` 页必须有四角定位块
-- `paper` 页不要求定位块，也不保存答案键
-- 主观题答案/解析不在 v2 标准内
+- `paper` 页不要求定位块，也不保存答案键；可保存题面和选项文本
+- `paper.pages[].questions[]` 现在可选题面 `stem` 和 `choices[].text`
+- 答案仍只在 `answerCard.answerKey`；解析/主观题答案不在 v2 标准内
 
 ## 2. 答案键位置
 
@@ -84,6 +85,7 @@ PUT /papers/{id} → 单页 ExamContent → toPaperV2() → 后端 v2
 - 读取 v2 后自动转回单页内容
 - 多页仅取第一页，识别前需提示
 - 模板 create/delete 已补 API 客户端方法
+- `bundleToPaperV2()` 现在会把题面填进 `paper.pages[]`，答案解析仍留在前端/题库侧
 
 ## 6. 已知文档不一致
 

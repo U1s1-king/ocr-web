@@ -136,8 +136,8 @@ import type { PaperBundle } from './types'
 
 /**
  * 把前端的 PaperBundle 转成后端 v2 包装。
- * 注意：后端 v2 当前只保存版面/题区/涂卡答案；
- * 题干、选项文字、主观题答案和解析仍由前端/题库侧保存。
+ * answerCard.pages 保存答题卡几何；paper.pages 保存题面 stem / choices.text。
+ * 答案只放在 answerCard.answerKey；解析仍由前端/题库侧维护。
  */
 export function bundleToPaperV2(bundle: PaperBundle): PaperV2 {
   const answerPages: PaperV2Page[] = bundle.answerCard.pages.map((page, i) => ({
@@ -165,6 +165,41 @@ export function bundleToPaperV2(bundle: PaperBundle): PaperV2 {
       })) as PaperV2Question[],
   }))
 
+  const paperPages: PaperV2Page[] = bundle.answerCard.pages.map((page, i) => ({
+    page: i + 1,
+    unit: 'canvas',
+    canvas: page.canvas,
+    blocks: page.blocks.map((b) => ({
+      id: b.id,
+      type: 'text' as const,
+      region: b.region,
+      text: b.text,
+      ...(b.style ? { style: b.style } : {}),
+    })),
+    questions: bundle.questions
+      .filter((q) => q.answerCard.page === page.side)
+      .sort((a, b) => a.number - b.number)
+      .map((q) => ({
+        id: q.id,
+        displayNumber: q.number,
+        type: q.answerCard.type,
+        stem: q.stem,
+        score: q.score,
+        region: q.answerCard.region,
+        choices:
+          q.answerCard.type === 'mark'
+            ? q.options.map((opt) => {
+                const cardChoice = q.answerCard.choices?.find((c) => c.value === opt.key)
+                return {
+                  value: opt.key,
+                  text: opt.text,
+                  region: cardChoice?.region ?? { x: 0, y: 0, width: 0.2, height: 1 },
+                }
+              })
+            : undefined,
+      })) as PaperV2Question[],
+  }))
+
   const markAnswers: Record<string, string> = {}
   for (const q of bundle.questions) {
     if (q.answerCard.type === 'mark' && q.answer) markAnswers[q.id] = q.answer
@@ -173,6 +208,6 @@ export function bundleToPaperV2(bundle: PaperBundle): PaperV2 {
   return {
     schemaVersion: 2,
     answerCard: { answerKey: markAnswers, pages: answerPages },
-    paper: { pages: [] },
+    paper: { pages: paperPages },
   }
 }
