@@ -33,8 +33,8 @@ export default function Capture() {
   const [box, setBox] = useState<Box>(DEFAULT_BOX)
   const [rotating, setRotating] = useState(false)
   const [pct, setPct] = useState(0)
-  const [paperId, setPaperId] = useState<number | null>(1)
-  const [paperName, setPaperName] = useState('高一数学第一次月考答题卡')
+  const [paperId, setPaperId] = useState<number | null>(null)
+  const [paperName, setPaperName] = useState('')
   const [pickOpen, setPickOpen] = useState(false)
   const [result, setResult] = useState<CheckResponse | null>(null)
   const [pages, setPages] = useState<UploadedPage[]>([])
@@ -155,8 +155,13 @@ export default function Capture() {
         nav(`/m/exams/${examId}`, { replace: true })
         return
       }
+      if (!paperId) {
+        setErr('请先选择要识别的答题卡试卷')
+        setStep('ready')
+        return
+      }
       const check = await papersApi.checkPages(
-        paperId ?? 1,
+        paperId,
         pages.map((p, i) => ({ page: i + 1, fileId: p.fileId })),
       )
       setPct(100)
@@ -182,7 +187,7 @@ export default function Capture() {
       <div className="mb-3 flex items-center gap-2">
         <button type="button" className="mo-chip flex-1 justify-start" onClick={() => setPickOpen(true)}>
           <IcLayers style={{ fontSize: 13 }} />
-          <span className="truncate">{paperName}</span>
+          <span className="truncate">{paperName || '选择答题卡'}</span>
         </button>
         <button
           type="button"
