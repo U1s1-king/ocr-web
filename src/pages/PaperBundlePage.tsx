@@ -235,7 +235,7 @@ export default function PaperBundlePage() {
         <Stat label="题目" value={`${bundle.questions.length} 道`} />
         <Stat label="总分" value={`${total} 分`} />
         <Stat label="大题" value={`${bundle.sections.length} 个`} />
-        <Stat label="答题卡" value={`${bundle.answerCard.pages.length} 页`} />
+        <Stat label="答题卡" value="双面" />
       </div>
 
       <div className="pbp-no-print flex flex-wrap items-center gap-2">

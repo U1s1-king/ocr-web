@@ -8,9 +8,11 @@
 import type { Block, ExamContent, Question } from '../../api/types'
 import { ANSWER_CARD_BARCODE_AREA } from '../barcode/templates'
 import { createSubjectBack } from './back'
+import { pageProfileOf } from './reflow'
 import {
   canvasOf,
   mm2u,
+  u2mm,
   paperMm,
   round2,
   type BlockMeta,
@@ -605,6 +607,81 @@ export interface GeneratedCard {
 }
 
 /**
+ * 双面大题分配：
+ * - 正反面表头/定位点保持同一坐标
+ * - 主观题按题量从中间分开，背面每个大题占满一整栏
+ * - 数学/理科背面三栏，文科两栏，语文/英语一栏
+ */
+function splitSubjectPages(front: CardDoc): { doc: CardDoc } {
+  const page = paperMm(front.meta.paperSize, front.meta.orientation)
+  const profile = pageProfileOf(front)
+  const questions = front.content.questions ?? []
+  const subjective = questions.filter((q) => q.type === 'subjective').sort((a, b) => a.region.y - b.region.y)
+  const objective = questions.filter((q) => q.type !== 'subjective')
+
+  // 少于 4 道主观题不拆，保持现有背面科目版式
+  if (subjective.length < 4) {
+    const back = createSubjectBack(front)
+    return { doc: { ...front, back: { content: back.content, qmeta: back.qmeta, bmeta: back.bmeta, hidden: [] } } }
+  }
+
+  const half = Math.ceil(subjective.length / 2)
+  const keep = subjective.slice(0, half)
+  const moved = subjective.slice(half)
+  const frontContent = {
+    ...front.content,
+    questions: [...objective, ...keep],
+    answerKey: front.content.answerKey,
+  }
+  front = { ...front, content: frontContent }
+
+  const headerKinds = new Set(['examLine', 'title', 'student', 'notice', 'legend', 'examNo', 'barcode', 'paperType'])
+  const headerBlocks = (front.content.blocks ?? []).filter((b) => headerKinds.has(front.bmeta[b.id]?.kind ?? ''))
+  const headerBottom = headerBlocks.length
+    ? Math.max(...headerBlocks.map((b) => u2mm(b.region.y) + u2mm(b.region.height)))
+    : 12
+  const marginX = 14
+  const marginBottom = 10
+  const bottom = page.h - marginBottom
+  const top = Math.min(bottom - 20, headerBottom + 4)
+  const count = Math.max(1, Math.min(profile.backCols, moved.length))
+  const gap = 5
+  const colW = (page.w - marginX * 2 - gap * (count - 1)) / count
+  const rows = Math.max(1, Math.ceil(moved.length / count))
+  const rowH = (bottom - top - gap * (rows - 1)) / rows
+  const qmeta: CardDoc['qmeta'] = {}
+  const bmeta: CardDoc['bmeta'] = {}
+  const blocks = headerBlocks.map((b) => ({ ...b }))
+  const backQuestions = moved.map((q, i) => {
+    const col = i % count
+    const row = Math.floor(i / count)
+    const region = {
+      x: mm2u(marginX + col * (colW + gap)),
+      y: mm2u(top + row * (rowH + gap)),
+      width: mm2u(colW),
+      height: mm2u(rowH),
+    }
+    qmeta[q.id] = { style: 'lines', rows: Math.max(3, Math.floor((rowH - 4) / LINE_MM)), label: q.displayNumber ? `${q.displayNumber}` : undefined }
+    return { ...q, region }
+  })
+  const back: CardDoc['back'] = {
+    content: {
+      schemaVersion: 1,
+      unit: 'canvas',
+      canvas: { ...front.content.canvas },
+      markers: (front.content.markers ?? []).map((m) => ({ ...m })),
+      blocks,
+      questions: backQuestions,
+      answerKey: {},
+    },
+    qmeta,
+    bmeta,
+    hidden: [],
+  }
+  return { doc: { ...front, back } }
+}
+
+/**
  * 自动出卡：A4 放不下时自动升级 A3，再放不下就整体压缩（保证不越界）。
  */
 export function generateCard(spec: CardSpec): GeneratedCard {
@@ -636,18 +713,16 @@ export function generateCard(spec: CardSpec): GeneratedCard {
         )
       }
       warnings.push(...built.warnings)
-      const back = createSubjectBack(built.doc)
-      built.doc.back = { content: back.content, qmeta: back.qmeta, bmeta: back.bmeta, hidden: [] }
-      return { doc: built.doc, warnings, usedSize: a.size, usedOrientation: a.orientation }
+      const split = splitSubjectPages(built.doc)
+      return { doc: split.doc, warnings, usedSize: a.size, usedOrientation: a.orientation }
     }
   }
 
   const fallback = last ?? buildOnce(spec, 7.2, 3.2)
   warnings.push('内容过多，已尽量压缩；建议减少主观题行数或改用更大纸型')
   warnings.push(...fallback.warnings)
-  const back = createSubjectBack(fallback.doc)
-  fallback.doc.back = { content: back.content, qmeta: back.qmeta, bmeta: back.bmeta, hidden: [] }
-  return { doc: fallback.doc, warnings, usedSize: lastAttempt.size, usedOrientation: lastAttempt.orientation }
+  const split = splitSubjectPages(fallback.doc)
+  return { doc: split.doc, warnings, usedSize: lastAttempt.size, usedOrientation: lastAttempt.orientation }
 }
 
 /** 从后端试卷内容还原渲染文档（没有本地草稿时使用） */

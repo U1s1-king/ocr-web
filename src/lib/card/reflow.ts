@@ -120,7 +120,7 @@ export function reflowTwoPages(
   function newPage() {
     if (pageNo === 1) {
       pageNo = 2
-      cursorY = MARGIN_TOP
+      cursorY = Math.max(MARGIN_TOP, headerBottom + 4)
     }
   }
   function colsNow(): number {
@@ -169,7 +169,7 @@ export function reflowTwoPages(
 
   // 2) 主观题 / 题块按科目列流
   let col = 0
-  let colY = pageNo === 1 ? cursorY : MARGIN_TOP
+  let colY = pageNo === 1 ? cursorY : Math.max(MARGIN_TOP, headerBottom + 4)
   const frontColStart = cursorY
 
   // 先估算两页可用高度；内容超出时统一压缩题区高度，强制塞进两页
@@ -190,7 +190,7 @@ export function reflowTwoPages(
     if (col >= cols) {
       newPage()
       col = 0
-      colY = MARGIN_TOP
+      colY = Math.max(MARGIN_TOP, headerBottom + 4)
     }
   }
 
@@ -224,7 +224,8 @@ export function reflowTwoPages(
   nextFront.content.blocks = [...headerBlocks, ...page1Blocks]
   nextFront.barcodes = (front.barcodes ?? []).filter((b) => u2mm(b.region.y) < firstQ - 1)
   nextBack.content.questions = page2Questions
-  nextBack.content.blocks = page2Blocks
+  // 背面重复正面表头（姓名/准考证/注意事项），保证正反面对位一致
+  nextBack.content.blocks = [...headerBlocks.map(clone), ...page2Blocks]
 
   if (page2Questions.length || page2Blocks.length) {
     for (const footer of footerBlocks) {
