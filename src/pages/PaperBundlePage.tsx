@@ -9,7 +9,6 @@ import { papersApi, errorText } from '../m/api'
 import {
   bundleTotalScore,
   questionsOfSection,
-  sectionTotalScore,
   validatePaperBundle,
   type PaperBundle,
   type PaperQuestion,
@@ -392,129 +391,149 @@ function Stat({ label, value }: { label: string; value: string }) {
 type PaperPreset = (typeof PAPER_PRESETS)[PaperBundle['meta']['paperSize']]
 
 function PaperView({ bundle, preset, side }: { bundle: PaperBundle; preset: PaperPreset; side: 'front' | 'back' }) {
-  const pages = useMemo(() => {
-    const sides = bundle.answerCard.pages.length ? bundle.answerCard.pages.map((p) => p.side) : (['front', 'back'] as const)
-    const out = sides
-      .map((side) => ({
-        side,
-        sections: bundle.sections.filter((sec) =>
-          questionsOfSection(bundle, sec.id).some((q) => q.answerCard.page === side),
-        ),
-      }))
-      .filter((p) => p.sections.length > 0)
-    return out.length ? out : [{ side: 'front' as const, sections: bundle.sections }]
-  }, [bundle])
+  const pages = useMemo(() => paginatePaper(bundle), [bundle])
+  const shown = pages.filter((p) => (side === 'front' ? p.pageNo <= 2 : p.pageNo > 2))
+  const list = shown.length ? shown : pages
+  const isA3 = preset.w > 300
 
-  const index = Math.max(0, pages.findIndex((p) => p.side === side))
-  const page = pages[index] ?? pages[0]
+  if (isA3) {
+    return (
+      <div className="flex flex-col items-center gap-6">
+        <div
+          className="pbp-paper-sheet relative z-[2] mx-auto flex gap-[10mm] bg-white text-ink shadow-[0_8px_40px_rgba(20,20,20,.12)]"
+          style={{
+            ['--paper-w' as string]: '420mm',
+            ['--paper-h' as string]: '297mm',
+            width: '420mm',
+            height: '297mm',
+            padding: '8mm',
+          }}
+        >
+          {[0, 1].map((i) => (
+            <PaperA4Page
+              key={i}
+              bundle={bundle}
+              page={list[i] ?? pages[i] ?? null}
+              pageNo={i + (side === 'front' ? 1 : 3)}
+              totalPages={pages.length}
+            />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col items-center gap-6">
-      <PaperSheet
-        key={page.side}
-        bundle={bundle}
-        preset={preset}
-        sections={page.sections}
-        pageNo={index + 1}
-        totalPages={pages.length}
-      />
+      {list.map((page) => (
+        <PaperA4Page key={page.pageNo} bundle={bundle} page={page} pageNo={page.pageNo} totalPages={pages.length} />
+      ))}
     </div>
   )
 }
 
-function PaperSheet({
+interface PaperPageData {
+  pageNo: number
+  sections: Array<{ title: string; instructions?: string; questions: PaperQuestion[] }>
+}
+
+/** 按真实 A4 试卷单栏版心做粗略分页：4 页，题多时自动增加 */
+function paginatePaper(bundle: PaperBundle): PaperPageData[] {
+  const pages: PaperPageData[] = []
+  let current: PaperPageData = { pageNo: 1, sections: [] }
+  let used = 68 // 第一页表头
+  const capacity = 252
+  const qHeight = (q: PaperQuestion) =>
+    q.options.length ? 20 + Math.max(0, Math.ceil(q.options.length / 2) - 2) * 4 : q.type === 'blank' ? 11 : 45
+
+  for (const section of bundle.sections) {
+    const qs = questionsOfSection(bundle, section.id)
+    let bucket: PaperPageData['sections'][number] | null = null
+    for (const q of qs) {
+      const h = qHeight(q)
+      if (used + h > capacity && (current.sections.length || bucket)) {
+        pages.push(current)
+        current = { pageNo: pages.length + 1, sections: [] }
+        used = 20
+        bucket = null
+      }
+      if (!bucket) {
+        bucket = { title: section.title, instructions: section.instructions, questions: [] }
+        current.sections.push(bucket)
+        used += 10
+      }
+      bucket.questions.push(q)
+      used += h
+    }
+  }
+  if (current.sections.length) pages.push(current)
+  return pages.length ? pages : [{ pageNo: 1, sections: [] }]
+}
+
+function PaperA4Page({
   bundle,
-  preset,
-  sections,
+  page,
   pageNo,
   totalPages,
 }: {
   bundle: PaperBundle
-  preset: PaperPreset
-  sections: PaperBundle['sections']
+  page: PaperPageData | null
   pageNo: number
   totalPages: number
 }) {
-  const columns = preset.columns
+  const first = pageNo === 1 || !page
   return (
     <div
-      className="pbp-paper-sheet relative z-[2] mx-auto bg-white text-ink shadow-[0_8px_40px_rgba(20,20,20,.12)]"
-      style={{
-        ['--paper-w' as string]: `${preset.w}mm`,
-        ['--paper-h' as string]: `${preset.h}mm`,
-        padding: `${preset.padY}mm ${preset.padX}mm`,
-        ['--paper-font' as string]: `${preset.font}px`,
-      }}
+      className="pbp-paper-sheet relative z-[2] bg-white text-ink"
+      style={{ width: '210mm', height: '297mm', padding: '12mm 14mm', overflow: 'hidden', ['--paper-w' as string]: '210mm', ['--paper-h' as string]: '297mm' }}
     >
-      <div className="flex items-center justify-between border-b border-ink/30 pb-1.5 text-[9px] font-bold tracking-widest text-ink-soft/70">
-        <span>绝密★启用前</span>
-        <span>
-          {preset.label} · {bundle.meta.subject}试卷 · {bundle.meta.variant ?? 'A'} 卷 · 第 {pageNo} 页 / 共 {totalPages} 页
-        </span>
-      </div>
-
-      <header className="pt-4 text-center">
-        <p className="text-[11px] font-semibold tracking-[0.2em] text-ink-soft/75">
-          2026 年普通高等学校招生全国统一考试（模拟）
+      {first && (
+        <>
+          <p className="text-[10px] font-semibold tracking-[0.2em] text-ink-soft/70">
+            绝密★启用前
+          </p>
+          <header className="mt-4 text-center">
+            <h2 className="text-[22px] font-black tracking-[0.1em]">{bundle.meta.title || `${bundle.meta.subject}试卷`}</h2>
+            <p className="mt-2 text-[11px] font-bold">{bundle.meta.examName}</p>
+            <p className="mt-1 text-[10px] text-ink-soft/70">
+              考试时间：{bundle.meta.durationMinutes} 分钟　试卷满分：{bundleTotalScore(bundle)} 分
+            </p>
+          </header>
+          <div className="mt-4 flex justify-between border-y border-ink/20 py-1.5 text-[9px] text-ink-soft/80">
+            <span>姓名：__________</span>
+            <span>准考证号：______________</span>
+            <span>考场号：________</span>
+            <span>座位号：______</span>
+          </div>
+        </>
+      )}
+      {!first && (
+        <p className="mb-3 text-center text-[9px] font-bold text-ink-soft/60">
+          {bundle.meta.subject}试卷　第 {pageNo} 页 / 共 {totalPages} 页
         </p>
-        <h2 className="mt-1 text-[24px] font-black tracking-[0.18em]">{bundle.meta.subject}试卷</h2>
-        <p className="mt-1 text-[10px] text-ink-soft/65">
-          {bundle.meta.examName} · {bundle.meta.durationMinutes} 分钟 · 满分 {bundleTotalScore(bundle)} 分
-        </p>
-      </header>
-
-      <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-1 border-y border-ink/20 py-2 text-[10px] text-ink-soft/85 sm:grid-cols-4">
-        <span>姓名：________________</span>
-        <span>准考证号：________________</span>
-        <span>考场号：____________</span>
-        <span>座位号：____________</span>
-      </div>
-
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[10px] font-semibold text-ink-soft/80">
-        <span>试卷类型：{bundle.meta.variant ?? 'A'}</span>
-        <span>满分：{bundleTotalScore(bundle)} 分</span>
-        <span>考试时间：{bundle.meta.durationMinutes} 分钟</span>
-        <span className="text-ink-soft/50">密封线内不要答题</span>
-      </div>
-
-      {pageNo === 1 && (
-        <div className="mt-3 border border-ink/25 px-3 py-2 text-[9px] leading-[1.65] text-ink-soft/80">
-          <p className="font-bold text-ink">注意事项：</p>
-          <p>1. 答题前，考生务必将姓名、准考证号、考场号、座位号填写清楚。</p>
-          <p>2. 选择题使用 2B 铅笔填涂；非选择题使用 0.5 毫米黑色签字笔作答。</p>
-          <p>3. 请按题号在答题卡指定区域内作答，超出答题区域书写的答案无效。</p>
-          <p>4. 保持答题卡清洁，不要折叠、不要弄破。</p>
-        </div>
       )}
 
-      <div
-        className="pbp-paper-columns mt-3 text-[10.5px] leading-[1.55]"
-        style={{ columnCount: columns, columnGap: `${preset.gap}mm` }}
-      >
-        {sections.map((section) => {
-          const qs = questionsOfSection(bundle, section.id)
-          return (
-            <section key={section.id} className="mb-5">
-              <div className="flex items-baseline justify-between gap-3 border-b border-ink/20 pb-1">
-                <h3 className="text-[13px] font-black">{section.title}</h3>
-                <span className="shrink-0 text-[9px] font-semibold text-ink-soft/55">
-                  {section.instructions || ''} · 共 {qs.length} 题 · {sectionTotalScore(bundle, section.id)} 分
-                </span>
-              </div>
-              <div className="mt-1.5 space-y-2">
-                {qs.map((q) => (
-                  <PaperQuestionView key={q.id} q={q} />
-                ))}
-              </div>
-            </section>
-          )
-        })}
+      <div className="mt-4 space-y-3" style={{ fontSize: '10px', lineHeight: 1.65 }}>
+        {(page?.sections ?? []).map((section, si) => (
+          <section key={`${section.title}-${si}`}>
+            <div className="flex items-baseline justify-between border-b border-ink/20 pb-1">
+              <h3 className="text-[12px] font-black">{section.title}</h3>
+              {section.instructions && (
+                <span className="text-[8.5px] text-ink-soft/55">{section.instructions}</span>
+              )}
+            </div>
+            <div className="mt-1.5 space-y-2">
+              {section.questions.map((q) => (
+                <PaperQuestionView key={q.id} q={q} />
+              ))}
+            </div>
+          </section>
+        ))}
       </div>
 
-      <footer className="mt-4 flex items-center justify-between border-t border-ink/20 pt-1.5 text-[9px] text-ink-soft/60">
-        <span>密封线内不要答题</span>
-        <span>
-          {bundle.meta.subject}试卷 · {preset.label} · 第 {pageNo} 页 / 共 {totalPages} 页
-        </span>
+      <footer className="absolute bottom-[8mm] left-[14mm] right-[14mm] flex justify-between border-t border-ink/20 pt-1 text-[8px] text-ink-soft/55">
+        <span>请在答题卡指定区域内作答</span>
+        <span>{pageNo} / {totalPages}</span>
       </footer>
     </div>
   )
