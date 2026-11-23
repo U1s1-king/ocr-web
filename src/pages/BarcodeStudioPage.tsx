@@ -8,7 +8,7 @@ import { useToast } from '../components/Toast'
 import { parseTableFile } from '../lib/barcode/importData'
 import { BarcodeSvg } from '../lib/card/barcode'
 import { requestPrint } from '../lib/print'
-import { isXp420bSupported, printXp420bLabels, requestXp420bPort, type Xp420bPort } from '../lib/hardware/xp420b'
+import { findXp420bPort, isXp420bSupported, printXp420bLabels, requestXp420bPort, type Xp420bPort } from '../lib/hardware/xp420b'
 import type { CardBarcodeFormat } from '../lib/card/types'
 import {
   DEFAULT_PERSON,
@@ -88,6 +88,13 @@ export default function BarcodeStudioPage() {
   const fileRef = useRef<HTMLInputElement>(null)
   const [port, setPort] = useState<Xp420bPort | null>(null)
   const [serialBusy, setSerialBusy] = useState(false)
+
+  useEffect(() => {
+    if (!isXp420bSupported()) return
+    findXp420bPort()
+      .then((p) => { if (p) setPort(p) })
+      .catch(() => {})
+  }, [])
   const drag = useRef<{ id: string; sx: number; sy: number; x: number; y: number } | null>(null)
 
   useEffect(() => {
