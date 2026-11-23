@@ -37,7 +37,7 @@ function loadBundle(): PaperBundle {
     if (!raw) return makeMockPaperBundle()
     const parsed = JSON.parse(raw) as PaperBundle
     if (parsed?.schema !== 'paper-bundle') return makeMockPaperBundle()
-    return parsed
+    return { ...parsed, meta: { ...parsed.meta, sides: 2 } }
   } catch {
     return makeMockPaperBundle()
   }
@@ -47,6 +47,7 @@ export default function PaperBundlePage() {
   const nav = useNavigate()
   const [bundle, setBundle] = useState<PaperBundle>(loadBundle)
   const [view, setView] = useState<View>('paper')
+  const [previewSide, setPreviewSide] = useState<'front' | 'back'>('front')
   const [message, setMessage] = useState('')
 
   const paperPreset = PAPER_PRESETS[bundle.meta.paperSize]
@@ -188,7 +189,7 @@ export default function PaperBundlePage() {
           <p className="mt-1 text-[12px] text-ink-soft/65">
             {bundle.meta.examName} · {bundle.meta.durationMinutes} 分钟 · {bundle.meta.paperSize}{' '}
             {bundle.meta.orientation === 'portrait' ? '竖版' : '横版'} ·{' '}
-            {bundle.meta.sides === 2 ? '双面' : '单面'}
+            双面
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -245,6 +246,26 @@ export default function PaperBundlePage() {
             </button>
           ))}
         </div>
+        {view !== 'answerKey' && (
+          <div className="inline-flex items-center gap-1 rounded-xl border border-brand-200 bg-white px-1 py-1">
+            <span className="px-1.5 text-[10px] font-bold text-ink-soft/55">正反面</span>
+            <button
+              type="button"
+              onClick={() => setPreviewSide('front')}
+              className={`rounded-lg px-3 py-1 text-[10.5px] font-bold ${previewSide === 'front' ? 'bg-brand-600 text-white' : 'text-ink-soft/65'}`}
+            >
+              正面
+            </button>
+            <button
+              type="button"
+              onClick={() => setPreviewSide('back')}
+              disabled={!bundle.answerCard.pages.some((p) => p.side === 'back')}
+              className={`rounded-lg px-3 py-1 text-[10.5px] font-bold disabled:opacity-40 ${previewSide === 'back' ? 'bg-brand-600 text-white' : 'text-ink-soft/65'}`}
+            >
+              背面
+            </button>
+          </div>
+        )}
         {view === 'paper' && (
           <div className="flex items-center gap-1 rounded-xl border border-brand-200 bg-white px-1 py-1">
             <span className="px-1.5 text-[10px] font-bold text-ink-soft/55">试卷纸型</span>
@@ -279,8 +300,8 @@ export default function PaperBundlePage() {
       )}
 
       <div className="pbp-print-area">
-        {view === 'paper' && <PaperView bundle={bundle} preset={paperPreset} />}
-        {view === 'answerCard' && <AnswerCardView bundle={bundle} />}
+        {view === 'paper' && <PaperView bundle={bundle} preset={paperPreset} side={previewSide} />}
+        {view === 'answerCard' && <AnswerCardView bundle={bundle} side={previewSide} />}
         {view === 'answerKey' && <AnswerKeyView bundle={bundle} />}
       </div>
 
@@ -305,7 +326,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 type PaperPreset = (typeof PAPER_PRESETS)[PaperBundle['meta']['paperSize']]
 
-function PaperView({ bundle, preset }: { bundle: PaperBundle; preset: PaperPreset }) {
+function PaperView({ bundle, preset, side }: { bundle: PaperBundle; preset: PaperPreset; side: 'front' | 'back' }) {
   const pages = useMemo(() => {
     const sides = bundle.answerCard.pages.length ? bundle.answerCard.pages.map((p) => p.side) : (['front', 'back'] as const)
     const out = sides
@@ -319,18 +340,18 @@ function PaperView({ bundle, preset }: { bundle: PaperBundle; preset: PaperPrese
     return out.length ? out : [{ side: 'front' as const, sections: bundle.sections }]
   }, [bundle])
 
+  const index = Math.max(0, pages.findIndex((p) => p.side === side))
+  const page = pages[index] ?? pages[0]
   return (
     <div className="flex flex-col items-center gap-6">
-      {pages.map((page, i) => (
-        <PaperSheet
-          key={page.side}
-          bundle={bundle}
-          preset={preset}
-          sections={page.sections}
-          pageNo={i + 1}
-          totalPages={pages.length}
-        />
-      ))}
+      <PaperSheet
+        key={page.side}
+        bundle={bundle}
+        preset={preset}
+        sections={page.sections}
+        pageNo={index + 1}
+        totalPages={pages.length}
+      />
     </div>
   )
 }
@@ -457,14 +478,13 @@ function PaperQuestionView({ q }: { q: PaperQuestion }) {
 
 /* ============================== 答题卡视图 ============================== */
 
-function AnswerCardView({ bundle }: { bundle: PaperBundle }) {
-  const [front, back] = bundle.answerCard.pages
-  const pages = [front, back].filter(Boolean)
+function AnswerCardView({ bundle, side }: { bundle: PaperBundle; side: 'front' | 'back' }) {
+  const pages = bundle.answerCard.pages
+  const page = pages.find((p) => p.side === side) ?? pages[0]
+  if (!page) return null
   return (
     <div className="flex flex-wrap items-start justify-center gap-5">
-      {pages.map((page) => (
-        <CardPage key={page.id} bundle={bundle} page={page} />
-      ))}
+      <CardPage key={page.id} bundle={bundle} page={page} />
     </div>
   )
 }
