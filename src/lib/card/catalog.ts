@@ -39,7 +39,7 @@ const FAMILY_LABEL: Record<CardFamily, string> = {
   generic: '通用',
 }
 
-const VARIANT_LABEL: Record<string, string> = { standard: '标准版', compact: '紧凑版', loose: '宽松版', blank: '空白版' }
+const VARIANT_LABEL: Record<string, string> = { standard: '官方版', compact: '官方版', loose: '官方版', blank: '空白版' }
 
 /* ---------------- 分值解析 ---------------- */
 
