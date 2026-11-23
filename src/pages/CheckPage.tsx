@@ -18,6 +18,7 @@ export default function CheckPage() {
   const [examId, setExamId] = useState(params.get('examId') ?? '')
   const [examName, setExamName] = useState('')
   const [files, setFiles] = useState<File[]>([])
+  const [pageMap, setPageMap] = useState<number[]>([])
   const [uploading, setUploading] = useState(false)
   const [uploaded, setUploaded] = useState<UploadedFile[]>([])
   const [checking, setChecking] = useState(false)
@@ -53,6 +54,11 @@ export default function CheckPage() {
     if (over.length) toast(`${over.length} 个文件超过 10 MiB，已忽略`, 'err')
     const ok = arr.filter((f) => f.size < 10 * 1024 * 1024)
     setFiles((prev) => [...prev, ...ok].slice(0, 50))
+    setPageMap((prev) => {
+      const next = [...prev]
+      ok.forEach((_, i) => next.push(Math.max(1, ...next, 0) + 1 + i))
+      return next.slice(0, 50)
+    })
     setUploaded([])
     setResult(null)
     setSaved([])
@@ -82,8 +88,11 @@ export default function CheckPage() {
         setUploaded(pool)
         setUploading(false)
       }
-      const ids = pool.slice(0, 50).map((u) => u.fileId)
-      const r = await papersApi.check(id, ids)
+      const pageFiles = pool.slice(0, 50).map((u, i) => ({
+        fileId: u.fileId,
+        page: pageMap[i] ?? i + 1,
+      }))
+      const r = await papersApi.checkPages(id, pageFiles)
       setResult(r)
       setActiveFile(r.results[0]?.fileId ?? null)
       // 整份结果写入本机历史，便于回看与导出
@@ -119,7 +128,7 @@ export default function CheckPage() {
       <header>
         <h1 className="text-xl font-black tracking-tight">答题卡检查</h1>
         <p className="mt-1 text-xs text-ink-soft">
-          上传答题卡图片后，按试卷配置的四角定位块做透视校正，逐个小题区域识别填涂结果。
+          上传答题卡图片后，可逐张指定对应答题卡页码；多页会按 files: [page/fileId] 提交，后端分别使用每页的四角定位块和题区识别。
         </p>
       </header>
 
@@ -157,7 +166,7 @@ export default function CheckPage() {
           />
           <UploadIcon className="mb-2 h-8 w-8 text-brand-500" />
           <p className="text-sm font-semibold text-ink">点击选择图片</p>
-          <p className="mt-1 text-[11px] text-ink-soft/60">单张 &lt; 10 MiB，最多 50 张</p>
+          <p className="mt-1 text-[11px] text-ink-soft/60">单张 &lt; 10 MiB，最多 50 张；每张可指定第几页</p>
         </label>
 
         {files.length > 0 && (
@@ -166,11 +175,26 @@ export default function CheckPage() {
               <div key={i} className="flex items-center gap-2 rounded-xl border border-brand-200/70 px-3 py-2 text-xs">
                 <ImageIcon className="h-4 w-4 shrink-0 text-brand-400" />
                 <span className="min-w-0 flex-1 truncate text-ink">{f.name}</span>
+                <label className="flex shrink-0 items-center gap-1 text-[10px] font-bold text-ink-soft/60">
+                  第
+                  <input
+                    type="number"
+                    min={1}
+                    value={pageMap[i] ?? i + 1}
+                    onChange={(e) => {
+                      const page = Math.max(1, Number(e.target.value) || 1)
+                      setPageMap((xs) => xs.map((v, j) => (j === i ? page : v)))
+                    }}
+                    className="w-12 rounded-md border border-brand-200 px-1 py-0.5 text-center text-[11px] outline-none"
+                  />
+                  页
+                </label>
                 <span className="shrink-0 text-[10px] text-ink-soft/50">{(f.size / 1024).toFixed(0)} KB</span>
                 <button
                   type="button"
                   onClick={() => {
                     setFiles((xs) => xs.filter((_, j) => j !== i))
+                    setPageMap((xs) => xs.filter((_, j) => j !== i))
                     setUploaded([])
                   }}
                   className="shrink-0 rounded-lg px-1.5 text-ink-soft/40 hover:text-red-500"

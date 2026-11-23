@@ -348,7 +348,7 @@ export default function Papers() {
             <p className="flex items-center gap-1.5 text-[11px] font-extrabold text-brand-800">
               <IcSpark style={{ fontSize: 14 }} /> 也可以直接用模板
             </p>
-            <p className="mo-muted mt-1">答题卡模板自带 54 份标准版式，选一份再改比从零画快得多。</p>
+            <p className="mo-muted mt-1">答题卡模板按高考 9 科官方版式生成，选一份再改比从零画快得多。</p>
             <button
               type="button"
               className="mt-2 text-[11.5px] font-bold text-brand-700"
