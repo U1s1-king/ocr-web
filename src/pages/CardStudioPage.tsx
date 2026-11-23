@@ -15,6 +15,8 @@ import {
   type CardTemplate,
 } from '../lib/card/catalog'
 import { generateCard } from '../lib/card/generator'
+import { readActiveBundle } from '../lib/paper/active'
+import { bundleToCardSpec } from '../lib/paper/cardSpec'
 import { CardSheet } from '../lib/card/render'
 import { backAsDoc } from '../lib/card/back'
 import {
@@ -50,6 +52,7 @@ export default function CardStudioPage() {
   const [remote, setRemote] = useState<TemplateSummary[]>([])
   const [remoteErr, setRemoteErr] = useState('')
   const [loadingRemote, setLoadingRemote] = useState(true)
+  const [fromBundle, setFromBundle] = useState(false)
 
   const generated = useMemo(() => generateCard(spec), [spec])
   const doc = generated.doc
@@ -89,6 +92,21 @@ export default function CardStudioPage() {
       setSpec(specFromTemplate(t))
       setName(t.name)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // 从统一试卷页跳转过来：按试卷 questions[] 自动生成答题卡
+  useEffect(() => {
+    const hashQ = window.location.hash.split('?')[1] ?? ''
+    if (new URLSearchParams(hashQ).get('fromBundle') !== '1') return
+    const bundle = readActiveBundle()
+    if (!bundle) return
+    const next = bundleToCardSpec(bundle)
+    setSpec(next)
+    setName(next.name)
+    setTemplateId('from-bundle')
+    setFromBundle(true)
+    toast(`已按试卷「${bundle.meta.title}」生成答题卡（${bundle.questions.length} 题）`, 'ok')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -214,11 +232,19 @@ export default function CardStudioPage() {
         crumb={[{ label: '试卷库', to: '/papers' }, { label: '答题卡制作' }]}
         extra={
           <>
+            {fromBundle && <Badge tone="ok">来自统一试卷</Badge>}
             <Badge tone="brand">{CARD_TEMPLATES.length} 份内置模板</Badge>
             {generated.warnings.length > 0 && <Badge tone="warn">{generated.warnings.length} 条提示</Badge>}
           </>
         }
       />
+
+      {fromBundle && (
+        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] font-semibold text-emerald-800">
+          <span>✓ 已从统一试卷带入</span>
+          <span className="text-emerald-700/70">{spec.name} · {spec.objectiveGroups.reduce((n, g) => n + g.count, 0)} 道选择题 · {spec.subjectiveGroups.reduce((n, g) => n + g.items.length, 0)} 道主观题</span>
+        </div>
+      )}
 
       <div className="grid gap-4 xl:grid-cols-[310px_minmax(0,1fr)]">
         {/* ===== 左：模板目录 ===== */}

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { makeMockPaperBundle } from '../lib/paper/mock'
+import { saveActiveBundle } from '../lib/paper/active'
 import { bundleToPaperV2 } from '../lib/paper/backendV2'
 import {
   bundleTotalScore,
@@ -43,6 +44,7 @@ function loadBundle(): PaperBundle {
 }
 
 export default function PaperBundlePage() {
+  const nav = useNavigate()
   const [bundle, setBundle] = useState<PaperBundle>(loadBundle)
   const [view, setView] = useState<View>('paper')
   const [message, setMessage] = useState('')
@@ -62,6 +64,11 @@ export default function PaperBundlePage() {
     } catch {
       /* ignore */
     }
+  }
+
+  function goCardStudio() {
+    saveActiveBundle(bundle)
+    nav('/papers/studio?fromBundle=1')
   }
 
   function reset() {
@@ -198,6 +205,9 @@ export default function PaperBundlePage() {
               }}
             />
           </label>
+          <button type="button" onClick={goCardStudio} className="rounded-xl border border-brand-300 bg-brand-50 px-3 py-2 text-[11.5px] font-bold text-brand-700">
+            去制作答题卡
+          </button>
           <button type="button" onClick={exportJson} className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-[11.5px] font-bold text-brand-700">
             导出 JSON
           </button>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../../components/Toast'
 import { studentsApi } from '../api'
-import { readFileText } from '../../lib/textEncoding'
+import { parseTableFile } from '../../lib/barcode/importData'
 import { BarcodeSvg } from '../../lib/card/barcode'
 import { Btn, Card, Page } from '../ui'
 import { IcLayers, IcTrash, IcUpload, IcUsers } from '../icons'
@@ -123,24 +123,16 @@ export default function BarcodeStudio() {
 
   function importFile(file?: File | null) {
     if (!file) return
-    readFileText(file).then((text) => {
-      let list: Record<string, string>[] = []
-      let headers: string[] = []
-      if (file.name.endsWith('.json')) {
-        const data = JSON.parse(text) as unknown
-        const arr = Array.isArray(data) ? data : []
-        list = arr.map((x) => Object.fromEntries(Object.entries(x as Record<string, unknown>).map(([k, v]) => [k, String(v ?? '')])))
-        headers = Object.keys(list[0] ?? {})
-      } else {
-        const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/).filter(Boolean)
-        headers = (lines[0] ?? '').split(',').map((x) => x.trim())
-        list = lines.slice(1).map((line) => Object.fromEntries(headers.map((h, i) => [h, (line.split(',')[i] ?? '').trim()])))
-      }
-      if (!list.length) throw new Error('没有识别到数据')
-      const mapping = detectMapping(headers)
-      setRows(list.map((x) => personFromRow(x, mapping)).filter((x) => x.name || x.candidateNumber))
-      toast(`已导入 ${list.length} 人`, 'ok')
-    }).catch((e) => toast(e instanceof Error ? e.message : '导入失败', 'err'))
+    parseTableFile(file)
+      .then(({ headers, rows }) => {
+        if (!rows.length) throw new Error('没有识别到数据')
+        const mapping = detectMapping(headers)
+        const next = rows.map((x) => personFromRow(x, mapping)).filter((x) => x.name || x.candidateNumber)
+        if (!next.length) throw new Error('没有识别到姓名/考号列')
+        setRows(next)
+        toast(`已导入 ${next.length} 人`, 'ok')
+      })
+      .catch((e) => toast(e instanceof Error ? e.message : '导入失败', 'err'))
   }
 
   const sel = design.fields.find((f) => f.id === selected)
@@ -240,7 +232,7 @@ export default function BarcodeStudio() {
           <input className="mo-input !h-9 min-w-0 flex-1" placeholder="手动输入条码数字" value={manual} onChange={(e) => setManual(e.target.value.replace(/\s/g, ''))} />
           <Btn sm variant="ghost" onClick={() => fileRef.current?.click()}><IcUpload /> 导入</Btn>
         </div>
-        <input ref={fileRef} type="file" accept=".json,.csv,.txt" className="hidden" onChange={(e) => importFile(e.target.files?.[0])} />
+        <input ref={fileRef} type="file" accept=".json,.csv,.txt,.xlsx,.xls" className="hidden" onChange={(e) => importFile(e.target.files?.[0])} />
         <div className="mt-2 flex gap-1.5">
           <Btn sm variant="ghost" onClick={() => download('条形码数据源.csv', CSV, 'text/csv;charset=utf-8')}><IcUpload /> CSV 模板</Btn>
           <Btn sm variant="ghost" onClick={() => download('条形码数据源.json', JSON.stringify([SAMPLE], null, 2), 'application/json')}><IcUpload /> JSON</Btn>

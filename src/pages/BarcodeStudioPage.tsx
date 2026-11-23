@@ -4,7 +4,7 @@ import { PageHeader } from '../components/PageHeader'
 import { Badge, Button, Card, Field, inputCls } from '../components/ui'
 import { ChevronRightIcon, DownloadIcon, TrashIcon } from '../components/icons'
 import { studentsApi } from '../m/api'
-import { readFileText, stripBom } from '../lib/textEncoding'
+import { parseTableFile } from '../lib/barcode/importData'
 import { BarcodeSvg } from '../lib/card/barcode'
 import type { CardBarcodeFormat } from '../lib/card/types'
 import {
@@ -57,43 +57,6 @@ function download(name: string, content: string, type = 'text/plain;charset=utf-
 
 function csvTemplate() {
   return '\uFEFF' + Object.keys(SAMPLE_ROW).join(',') + '\n' + Object.values(SAMPLE_ROW).join(',') + '\n'
-}
-
-function parseCsv(text: string): { headers: string[]; rows: Record<string, string>[] } {
-  const lines: string[][] = []
-  let row: string[] = []
-  let cell = ''
-  let quoted = false
-  for (let i = 0; i < text.length; i += 1) {
-    const ch = text[i]
-    if (quoted) {
-      if (ch === '"' && text[i + 1] === '"') {
-        cell += '"'
-        i += 1
-      } else if (ch === '"') quoted = false
-      else cell += ch
-    } else if (ch === '"') quoted = true
-    else if (ch === ',') {
-      row.push(cell)
-      cell = ''
-    } else if (ch === '\n') {
-      row.push(cell)
-      lines.push(row)
-      row = []
-      cell = ''
-    } else if (ch !== '\r') cell += ch
-  }
-  if (cell || row.length) {
-    row.push(cell)
-    lines.push(row)
-  }
-  const clean = lines.filter((r) => r.some((x) => x.trim() !== ''))
-  if (!clean.length) return { headers: [], rows: [] }
-  const headers = clean[0].map((h) => stripBom(h).trim())
-  return {
-    headers,
-    rows: clean.slice(1).map((r) => Object.fromEntries(headers.map((h, i) => [h, (r[i] ?? '').trim()]))),
-  }
 }
 
 function fieldValue(field: BarcodeField, person: BarcodePerson, staticText?: Record<string, string>): string {
@@ -261,25 +224,8 @@ export default function BarcodeStudioPage() {
     if (!file) return
     setImportError('')
     setImportInfo('')
-    if (/\.(xlsx|xls)$/i.test(file.name)) {
-      setImportError('Excel 请先在 Excel 里「另存为 CSV」，再导入；或直接下载我们的 CSV 模板。')
-      return
-    }
-    readFileText(file)
-      .then((text) => {
-        let headers: string[] = []
-        let rows: Record<string, string>[] = []
-        if (file.name.toLowerCase().endsWith('.json')) {
-          const data = JSON.parse(text) as unknown
-          const arr = Array.isArray(data) ? data : (data as { rows?: unknown[]; students?: unknown[] }).rows ?? (data as { students?: unknown[] }).students
-          if (!Array.isArray(arr) || !arr.length) throw new Error('JSON 需要是非空数组')
-          rows = arr.map((r) => Object.fromEntries(Object.entries(r as Record<string, unknown>).map(([k, v]) => [k, String(v ?? '')])))
-          headers = Object.keys(rows[0] ?? {})
-        } else {
-          const parsed = parseCsv(text)
-          headers = parsed.headers
-          rows = parsed.rows
-        }
+    parseTableFile(file)
+      .then(({ headers, rows }) => {
         if (!headers.length || !rows.length) throw new Error('没有识别到数据行')
         let mapping = detectMapping(headers)
         if (!mapping.name && headers.length >= 2) {
@@ -405,7 +351,7 @@ export default function BarcodeStudioPage() {
                 {peopleSource === 'import' ? '外部导入' : '学生名单'}
               </Badge>
             </div>
-            <input ref={fileRef} type="file" accept=".json,.csv,.txt" className="hidden" onChange={(e) => handleImport(e.target.files?.[0])} />
+            <input ref={fileRef} type="file" accept=".json,.csv,.txt,.xlsx,.xls" className="hidden" onChange={(e) => handleImport(e.target.files?.[0])} />
             <div className="mt-2 grid grid-cols-2 gap-1 rounded-xl bg-brand-50 p-1">
               <button
                 type="button"
