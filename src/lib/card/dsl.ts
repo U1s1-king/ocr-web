@@ -18,10 +18,12 @@
  * 输出仍然是标准 v1 的 CardDoc，可直接精调、保存、打印。
  */
 import type { Block, Choice, Question } from '../../api/types'
+import { createSubjectBack } from './back'
 import {
   canvasOf,
   mm2u,
   paperMm,
+  u2mm,
   validateCard,
   type BlockMeta,
   type CardDoc,
@@ -47,6 +49,8 @@ export interface DslConfig {
   split: number
   size: number
   paperSize: PaperSize
+  /** 背面科目版式 */
+  subject: string
 }
 
 export interface DslParseResult {
@@ -59,7 +63,7 @@ const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 export function parseSheetDsl(source: string): DslParseResult {
   const warnings: string[] = []
-  const config: DslConfig = { split: 3, size: 15, paperSize: 'A3' }
+  const config: DslConfig = { split: 3, size: 15, paperSize: 'A3', subject: '数学' }
   const tokens: DslToken[] = []
   let sawPaper = false
 
@@ -152,7 +156,7 @@ export interface DslBuildResult {
   issues: CardIssue[]
 }
 
-export function buildCardFromDsl(source: string, opts: { name?: string; paperSize?: PaperSize } = {}): DslBuildResult {
+export function buildCardFromDsl(source: string, opts: { name?: string; paperSize?: PaperSize; subject?: string } = {}): DslBuildResult {
   const parsed = parseSheetDsl(source)
   const size = opts.paperSize ?? parsed.config.paperSize
   const orientation = size === 'A3' ? 'landscape' : 'portrait'
@@ -181,6 +185,7 @@ export function buildCardFromDsl(source: string, opts: { name?: string; paperSiz
       subtitle: '',
       templateId: 'dsl',
       templateName: opts.name ?? 'DSL 答题卡',
+      subject: opts.subject ?? parsed.config.subject,
     },
     content: {
       schemaVersion: 1,
@@ -279,6 +284,17 @@ export function buildCardFromDsl(source: string, opts: { name?: string; paperSiz
     }
   }
   y += 1
+  // 姓名/考号栏：正反面共用同一坐标，打印对位一致
+  addBlock(
+    '姓名：____________  准考证号：________________  考场号：__________  座位号：________',
+    contentX0,
+    y,
+    contentW,
+    7,
+    { fontSize: 3.2, textAlign: 'left', lineHeight: 1.2 },
+    { kind: 'student' },
+  )
+  y += 8
 
   // 分栏
   let colIndex = 0
@@ -359,9 +375,12 @@ export function buildCardFromDsl(source: string, opts: { name?: string; paperSiz
   }
 
   // 页脚
-  const footText = `${doc.meta.subtitle || doc.meta.title || '答题卡'} 第1面（共1面）`
+  const footText = `${doc.meta.subtitle || doc.meta.title || '答题卡'} 第1面（共2面）`
   addBlock(footText, contentX0, page.h - marginBottom - 5, contentW, 4.5, { fontSize: 2.8, textAlign: 'center' }, { kind: 'footer' })
 
+  // 默认双面：背面按科目生成大题作答区，定位点直接复制正面
+  const back = withBackHeader(doc, createSubjectBack(doc))
+  doc.back = { content: back.content, qmeta: back.qmeta, bmeta: back.bmeta, hidden: [] }
   doc.updatedAt = Date.now()
   return { doc, warnings, issues: validateCard(doc) }
 }
@@ -402,6 +421,26 @@ export const DSL_SAMPLE = `# A3
 20. L-10
 21. L-10
 `
+
+function withBackHeader(front: CardDoc, back: CardDoc): CardDoc {
+  const page = paperMm(front.meta.paperSize, front.meta.orientation)
+  const headerKinds = new Set(['examLine', 'title', 'student', 'notice', 'legend', 'examNo', 'paperType'])
+  const headerBlocks = (front.content.blocks ?? []).filter((b) => headerKinds.has(front.bmeta[b.id]?.kind ?? ''))
+  if (!headerBlocks.length) return back
+  const headerBottom = Math.max(...headerBlocks.map((b) => u2mm(b.region.y) + u2mm(b.region.height)))
+  const shift = mm2u(headerBottom + 2)
+  const bottom = mm2u(page.h - 10)
+  const content = {
+    ...back.content,
+    blocks: [...headerBlocks.map((b) => ({ ...b })), ...(back.content.blocks ?? []).map((b) => ({ ...b, region: { ...b.region, y: b.region.y + shift } }))],
+    questions: (back.content.questions ?? []).map((q) => {
+      const region = { ...q.region, y: q.region.y + shift }
+      region.height = Math.max(region.height * 0.35, Math.min(region.height, bottom - region.y))
+      return { ...q, region }
+    }),
+  }
+  return { ...back, content }
+}
 
 function round3(v: number): number {
   return Math.round(v * 1000) / 1000

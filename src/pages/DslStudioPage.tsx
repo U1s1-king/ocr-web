@@ -7,6 +7,7 @@ import { useToast } from '../components/Toast'
 import { errorText } from '../api/client'
 import { DSL_SAMPLE, buildCardFromDsl, parseSheetDsl } from '../lib/card/dsl'
 import { CardSheet } from '../lib/card/render'
+import { backAsDoc } from '../lib/card/back'
 import { paperMm, type PaperSize } from '../lib/card/types'
 import { createPaperFromDoc, stashDoc } from '../lib/card/store'
 import { downloadText } from '../lib/image'
@@ -26,6 +27,7 @@ interface BuilderConfig {
   paperSize: PaperSize
   split: number
   size: number
+  subject: string
 }
 
 const QUESTION_KINDS: Array<{ kind: RowKind; code: string; label: string; value: number; unit: string; hint: string }> = [
@@ -59,7 +61,7 @@ function rowsFromDsl(source: string): { rows: BuilderRow[]; config: BuilderConfi
 }
 
 function dslFromRows(rows: BuilderRow[], config: BuilderConfig): string {
-  const lines: string[] = [`# ${config.paperSize}`, `#split ${config.split}`, `#size ${config.size}`, '']
+  const lines: string[] = [`# ${config.paperSize}`, `#split ${config.split}`, `#size ${config.size}`, `#subject ${config.subject}`, '']
   let n = 1
   for (const row of rows) {
     if (row.kind === 'title') lines.push(`# ${row.text || '试卷标题'}`)
@@ -97,13 +99,16 @@ export default function DslStudioPage() {
   const [config, setConfig] = useState<BuilderConfig>(initial.config)
   const [name, setName] = useState('DSL 答题卡')
   const [selected, setSelected] = useState<string | null>(null)
+  const [side, setSide] = useState<'front' | 'back'>('front')
   const [saving, setSaving] = useState(false)
   const previewRef = useRef<HTMLDivElement>(null)
   const [zoom, setZoom] = useState(0.45)
 
   const dsl = useMemo(() => dslFromRows(rows, config), [rows, config])
-  const built = useMemo(() => buildCardFromDsl(dsl, { name }), [dsl, name])
+  const built = useMemo(() => buildCardFromDsl(dsl, { name, subject: config.subject }), [dsl, name, config.subject])
   const doc = built.doc
+  const back = doc.back ? backAsDoc(doc) : null
+  const previewDoc = side === 'back' && back ? back : doc
   const dims = paperMm(doc.meta.paperSize, doc.meta.orientation)
   const errors = built.issues.filter((i) => i.level === 'error')
 
@@ -189,7 +194,7 @@ export default function DslStudioPage() {
     <div>
       <PageHeader
         title="文本出卡（图形化）"
-        desc="按题型添加题目，自动编号；支持选择题、填空题、解答题、数字涂卡、空白区。"
+        desc="按题型添加题目，自动编号，默认双面；支持选择题、填空题、解答题、数字涂卡、空白区。"
         crumb={[{ label: '试卷库', to: '/papers' }, { label: '文本出卡' }]}
         extra={<Badge tone={errors.length ? 'err' : 'ok'}>{errors.length ? `${errors.length} 个错误` : '排布通过'}</Badge>}
       />
@@ -211,6 +216,13 @@ export default function DslStudioPage() {
             >
               <option value="A3">A3</option>
               <option value="A4">A4</option>
+            </select>
+            <select
+              className="rounded-xl border border-brand-200 bg-white px-2 py-2 text-[12px] font-semibold"
+              value={config.subject}
+              onChange={(e) => setConfig((c) => ({ ...c, subject: e.target.value }))}
+            >
+              {['语文','数学','英语','物理','化学','生物','历史','地理','政治'].map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
             <label className="flex items-center gap-1 text-[10.5px] font-bold text-ink-soft">
               栏数
@@ -315,10 +327,15 @@ export default function DslStudioPage() {
         </Card>
 
         <Card className="!p-3">
+          <div className="mb-2 flex items-center gap-1">
+            <button type="button" className={`rounded-lg px-2.5 py-1 text-[10.5px] font-bold ${side === 'front' ? 'bg-brand-600 text-white' : 'bg-white text-ink-soft'}`} onClick={() => setSide('front')}>正面</button>
+            <button type="button" disabled={!back} className={`rounded-lg px-2.5 py-1 text-[10.5px] font-bold disabled:opacity-40 ${side === 'back' ? 'bg-brand-600 text-white' : 'bg-white text-ink-soft'}`} onClick={() => setSide('back')}>背面</button>
+            <span className="text-[10px] text-ink-soft/50">双面 · {doc.content.questions.length} 题</span>
+          </div>
           <div ref={previewRef} className="flex items-start justify-center overflow-hidden rounded-xl bg-neutral-100/70 p-3">
             <div style={{ width: dims.w * PX_PER_MM * zoom, height: dims.h * PX_PER_MM * zoom, flex: 'none' }}>
               <div style={{ width: dims.w * PX_PER_MM, height: dims.h * PX_PER_MM }}>
-                <CardSheet doc={doc} zoom={zoom} />
+                <CardSheet doc={previewDoc} zoom={zoom} />
               </div>
             </div>
           </div>
