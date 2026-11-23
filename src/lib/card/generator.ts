@@ -259,9 +259,11 @@ function layoutObjective(
   startTop: number,
   rowH: number,
   fontSize: number,
+  area?: { x0: number; w: number; maxPerRow?: number },
 ): number {
   const { ctx } = b
-  const { contentX0, contentW } = ctx
+  const contentX0 = area?.x0 ?? ctx.contentX0
+  const contentW = area?.w ?? ctx.contentW
   let y = startTop
   let number = 1
 
@@ -281,7 +283,7 @@ function layoutObjective(
     const optW = Math.max(4.6, fontSize * 1.45)
     const cellW = labelW + options.length * optW + 1.6
     const fitPerRow = Math.max(1, Math.floor((contentW + gap) / (cellW + gap)))
-    const maxPerRow = Math.min(fitPerRow, ctx.page.w > 260 ? 10 : 8)
+    const maxPerRow = Math.min(fitPerRow, area?.maxPerRow ?? (ctx.page.w > 260 ? 10 : 8))
     const rowCount = Math.max(1, Math.ceil(g.count / maxPerRow))
     const perRow = Math.max(1, Math.ceil(g.count / rowCount))
     const rows = Math.ceil(g.count / perRow)
@@ -352,13 +354,14 @@ function layoutSubjective(
   groups: SubjectiveGroupSpec[],
   top: number,
   bottom: number,
+  area?: { x0: number; w: number; cols?: number },
 ): number {
   const { ctx } = b
   if (!groups.length) return top
-  const cols = ctx.subjCols
+  const cols = area?.cols ?? ctx.subjCols
   const colGap = 5
-  const colW = (ctx.contentW - colGap * (cols - 1)) / cols
-  const colX = (i: number) => ctx.contentX0 + i * (colW + colGap)
+  const colW = ((area?.w ?? ctx.contentW) - colGap * (cols - 1)) / cols
+  const colX = (i: number) => (area?.x0 ?? ctx.contentX0) + i * (colW + colGap)
   const capacity = Math.max(20, bottom - top)
   const needs = groups.map((g) => subjectiveNeeds(g, colW))
 
@@ -517,14 +520,27 @@ function buildOnce(spec: CardSpec, rowH: number, fontSize: number, subjCols?: nu
   }
 
   const afterHeader = layoutHeader(b, spec, ctx.marginTop)
-  const afterObjective = layoutObjective(b, spec.objectiveGroups, afterHeader, rowH, fontSize)
-  const subjectiveTop = afterObjective + 1
   const subjectiveBottom = footerY - 1
-
+  const splitA3 = spec.paperSize === 'A3' && spec.orientation === 'landscape' && spec.objectiveGroups.length > 0 && spec.subjectiveGroups.length > 0
   let overflow = false
-  if (spec.subjectiveGroups.length) {
-    const end = layoutSubjective(b, spec.subjectiveGroups, subjectiveTop, subjectiveBottom)
-    overflow = end > subjectiveBottom + 0.5 || subjectiveTop > subjectiveBottom || b.tooCompressed
+
+  if (splitA3) {
+    // 高考 A3 真卡：左栏选择题填涂，右侧及剩余区域主观题
+    const leftW = Math.min(105, Math.max(82, ctx.contentW * 0.27))
+    const gap = 5
+    const left = { x0: ctx.contentX0, w: leftW, maxPerRow: 2 }
+    const right = { x0: ctx.contentX0 + leftW + gap, w: ctx.contentX1 - (ctx.contentX0 + leftW + gap), cols: 3 }
+    const top = afterHeader + 1
+    layoutObjective(b, spec.objectiveGroups, top, rowH, fontSize, left)
+    const end = layoutSubjective(b, spec.subjectiveGroups, top, subjectiveBottom, right)
+    overflow = end > subjectiveBottom + 0.5 || b.tooCompressed
+  } else {
+    const afterObjective = layoutObjective(b, spec.objectiveGroups, afterHeader, rowH, fontSize)
+    const subjectiveTop = afterObjective + 1
+    if (spec.subjectiveGroups.length) {
+      const end = layoutSubjective(b, spec.subjectiveGroups, subjectiveTop, subjectiveBottom)
+      overflow = end > subjectiveBottom + 0.5 || subjectiveTop > subjectiveBottom || b.tooCompressed
+    }
   }
 
   // 空白卡：至少一道主观题占满剩余区域（后端要求至少 1 题）

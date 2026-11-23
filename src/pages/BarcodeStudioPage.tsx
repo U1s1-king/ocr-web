@@ -116,6 +116,7 @@ export default function BarcodeStudioPage() {
   const [sourceTab, setSourceTab] = useState<'students' | 'external'>('students')
   const [templateOpen, setTemplateOpen] = useState(false)
   const [manualBarcode, setManualBarcode] = useState('')
+  const [zoom, setZoom] = useState(2)
   const fileRef = useRef<HTMLInputElement>(null)
   const drag = useRef<{ id: string; sx: number; sy: number; x: number; y: number } | null>(null)
 
@@ -468,6 +469,16 @@ export default function BarcodeStudioPage() {
               </div>
             </div>
 
+            <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl bg-brand-100/60 px-2.5 py-2">
+              <span className="text-[10px] font-bold text-ink-soft">画布缩放</span>
+              <button type="button" className="h-6 w-6 rounded-md border border-brand-200 bg-white text-[13px] font-black text-brand-700" onClick={() => setZoom((z) => Math.max(0.75, Math.round((z - 0.25) * 100) / 100))}>−</button>
+              <span className="w-12 text-center text-[10.5px] font-bold text-ink">{Math.round(zoom * 100)}%</span>
+              <button type="button" className="h-6 w-6 rounded-md border border-brand-200 bg-white text-[13px] font-black text-brand-700" onClick={() => setZoom((z) => Math.min(4, Math.round((z + 0.25) * 100) / 100))}>＋</button>
+              <button type="button" className="rounded-md border border-brand-200 bg-white px-2 py-1 text-[9.5px] font-bold text-brand-700" onClick={() => setZoom(1)}>100%</button>
+              <button type="button" className="rounded-md border border-brand-200 bg-white px-2 py-1 text-[9.5px] font-bold text-brand-700" onClick={() => setZoom(2)}>适应</button>
+              <span className="text-[9.5px] text-ink-soft/50">拖动组件；选中后可拖角/边改大小</span>
+            </div>
+
             <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl bg-brand-50/50 px-2.5 py-2">
               <span className="text-[10px] font-bold text-ink-soft">手动条码数字</span>
               <input
@@ -481,13 +492,27 @@ export default function BarcodeStudioPage() {
             </div>
 
             <div className="mt-3 flex flex-col gap-3 lg:flex-row">
-              <div className="flex min-w-0 flex-1 items-start justify-center rounded-2xl bg-neutral-200/70 p-4">
+              <div className="flex min-w-0 flex-1 items-start justify-center overflow-auto rounded-2xl bg-neutral-200/70 p-4">
                 <div
-                  className="barcode-design-canvas relative bg-white shadow-[0_18px_40px_-26px_rgba(0,0,0,.5)]"
-                  style={{ width: `${design.width}mm`, height: `${design.height}mm` }}
-                  onPointerDown={() => setSelected(null)}
+                  className="barcode-canvas-zoom-wrap shrink-0"
+                  style={{ width: `${design.width * zoom}mm`, height: `${design.height * zoom}mm` }}
                 >
-                  {design.fields.map((f) => renderField(f, previewPerson, true))}
+                  <div
+                    className="barcode-design-canvas relative origin-top-left bg-white shadow-[0_18px_40px_-26px_rgba(0,0,0,.5)]"
+                    style={{
+                      width: `${design.width}mm`,
+                      height: `${design.height}mm`,
+                      transform: `scale(${zoom})`,
+                    }}
+                    onPointerDown={() => setSelected(null)}
+                    onWheel={(e) => {
+                      if (!e.ctrlKey) return
+                      e.preventDefault()
+                      setZoom((z) => Math.min(4, Math.max(0.75, Math.round((z + (e.deltaY > 0 ? -0.25 : 0.25)) * 100) / 100)))
+                    }}
+                  >
+                    {design.fields.map((f) => renderField(f, previewPerson, true))}
+                  </div>
                 </div>
               </div>
 

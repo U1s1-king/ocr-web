@@ -34,6 +34,7 @@ export default function BarcodeStudio() {
   const [design, setDesign] = useState<BarcodeDesign>(() => designForPreset(LABEL_PRESETS[0]))
   const [selected, setSelected] = useState<string | null>(null)
   const [manual, setManual] = useState('')
+  const [zoom, setZoom] = useState(2)
   const [rows, setRows] = useState<BarcodePerson[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
   const drag = useRef<{ id: string; sx: number; sy: number; x: number; y: number } | null>(null)
@@ -79,6 +80,29 @@ export default function BarcodeStudio() {
     }
     const onUp = () => {
       drag.current = null
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
+
+  function startResize(e: React.PointerEvent, f: BarcodeField, dir: 'right' | 'bottom' | 'both') {
+    e.preventDefault()
+    e.stopPropagation()
+    setSelected(f.id)
+    const sx = e.clientX
+    const sy = e.clientY
+    const w0 = f.w
+    const h0 = f.h
+    const canvas = (e.currentTarget as HTMLElement).closest('.mo-barcode-canvas')?.getBoundingClientRect()
+    const px = canvas ? canvas.width / design.width : 4
+    const onMove = (ev: PointerEvent) => {
+      const w = dir === 'bottom' ? w0 : Math.max(6, Math.min(design.width - f.x, w0 + (ev.clientX - sx) / px))
+      const h = dir === 'right' ? h0 : Math.max(4, Math.min(design.height - f.y, h0 + (ev.clientY - sy) / px))
+      patchField(f.id, { w: Math.round(w * 10) / 10, h: Math.round(h * 10) / 10 })
+    }
+    const onUp = () => {
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
     }
@@ -142,12 +166,21 @@ export default function BarcodeStudio() {
           <p className="text-[12px] font-extrabold">标签画布</p>
           <span className="mo-muted">{design.width}×{design.height}mm</span>
         </div>
-        <div className="mt-3 flex justify-center overflow-x-auto rounded-2xl bg-neutral-100 p-3">
-          <div
-            className="mo-barcode-canvas relative flex-none bg-white shadow"
-            style={{ width: `${design.width}mm`, height: `${design.height}mm` }}
-            onPointerDown={() => setSelected(null)}
-          >
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 rounded-xl bg-brand-50 px-2 py-1.5">
+          <span className="text-[10px] font-bold text-ink-soft">缩放</span>
+          <button type="button" className="h-6 w-6 rounded-md border border-brand-200 bg-white text-[13px] font-black text-brand-700" onClick={() => setZoom((z) => Math.max(0.75, Math.round((z - 0.25) * 100) / 100))}>−</button>
+          <span className="w-10 text-center text-[10px] font-bold">{Math.round(zoom * 100)}%</span>
+          <button type="button" className="h-6 w-6 rounded-md border border-brand-200 bg-white text-[13px] font-black text-brand-700" onClick={() => setZoom((z) => Math.min(4, Math.round((z + 0.25) * 100) / 100))}>＋</button>
+          <button type="button" className="rounded-md border border-brand-200 bg-white px-2 py-1 text-[9.5px] font-bold text-brand-700" onClick={() => setZoom(1)}>100%</button>
+          <button type="button" className="rounded-md border border-brand-200 bg-white px-2 py-1 text-[9.5px] font-bold text-brand-700" onClick={() => setZoom(2)}>适应</button>
+        </div>
+        <div className="mt-3 flex justify-center overflow-auto rounded-2xl bg-neutral-100 p-3">
+          <div className="shrink-0" style={{ width: `${design.width * zoom}mm`, height: `${design.height * zoom}mm` }}>
+            <div
+              className="mo-barcode-canvas relative flex-none origin-top-left bg-white shadow"
+              style={{ width: `${design.width}mm`, height: `${design.height}mm`, transform: `scale(${zoom})` }}
+              onPointerDown={() => setSelected(null)}
+            >
             {design.fields.map((f) => (
               <div
                 key={f.id}
@@ -160,9 +193,16 @@ export default function BarcodeStudio() {
                 ) : (
                   <span className="block truncate">{fieldValue(f, previewPerson) || FIELD_PLACEHOLDER[f.key]}</span>
                 )}
-                {selected === f.id && <span data-resize className="absolute -bottom-1 -right-1 h-2.5 w-2.5 rounded-sm bg-brand-600" />}
+                {selected === f.id && (
+                  <>
+                    <span data-resize className="absolute -bottom-1 -right-1 h-2.5 w-2.5 rounded-sm bg-brand-600" onPointerDown={(e) => startResize(e, f, 'both')} />
+                    <span data-resize className="absolute -bottom-1 right-2 h-2.5 w-2.5 rounded-sm bg-brand-600" onPointerDown={(e) => startResize(e, f, 'bottom')} />
+                    <span data-resize className="absolute -right-1 bottom-2 h-2.5 w-2.5 rounded-sm bg-brand-600" onPointerDown={(e) => startResize(e, f, 'right')} />
+                  </>
+                )}
               </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5">
