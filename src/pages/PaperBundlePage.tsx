@@ -15,7 +15,7 @@ import {
   type PaperQuestion,
 } from '../lib/paper/types'
 
-const STORAGE_KEY = 'ac.paper.bundle.demo.v1'
+const STORAGE_KEY = 'ac.paper.bundle.demo.v2'
 type View = 'paper' | 'answerCard' | 'answerKey'
 
 const VIEW_LABEL: Record<View, string> = {
@@ -138,7 +138,7 @@ export default function PaperBundlePage() {
           column-gap: 12mm;
         }
         .pbp-paper-columns section {
-          break-inside: avoid-column;
+          break-inside: auto;
         }
         .pbp-paper-question {
           break-inside: avoid;
@@ -164,8 +164,8 @@ export default function PaperBundlePage() {
           .pbp-paper-sheet:last-child { page-break-after: auto; break-after: auto; }
           .pbp-answer-card-sheet {
             --pbp-card-scale: 1;
-            width: 210mm !important;
-            height: 297mm !important;
+            width: var(--pbp-card-w, 210mm) !important;
+            height: var(--pbp-card-h, 297mm) !important;
             box-shadow: none !important;
             border: 0 !important;
             page-break-after: always;
@@ -175,122 +175,128 @@ export default function PaperBundlePage() {
         }
       `}</style>
 
-      <div className="pbp-no-print flex flex-wrap items-start justify-between gap-3">
-        <div>
+      <div className="pbp-no-print overflow-hidden rounded-2xl border border-brand-200/70 bg-white shadow-soft">
+        <div className="flex flex-wrap items-start justify-between gap-4 px-4 py-4">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl font-black text-ink">{bundle.meta.title}</h1>
+              <span className="rounded-full bg-brand-50 px-2.5 py-1 text-[10px] font-bold text-brand-700">
+                {bundle.meta.subject} · {bundle.meta.grade} · {bundle.meta.variant ?? 'A'} 卷
+              </span>
+              <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-700">双面 · 原型</span>
+            </div>
+            <p className="mt-1 text-[12px] text-ink-soft/65">
+              {bundle.meta.examName} · {bundle.meta.durationMinutes} 分钟 · {bundle.meta.paperSize}{' '}
+              {bundle.meta.orientation === 'portrait' ? '竖版' : '横版'} · 双面
+            </p>
+          </div>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-xl font-black text-ink">{bundle.meta.title}</h1>
-            <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-700">
-              原型 · 后端未接
-            </span>
-            <span className="rounded-full bg-brand-50 px-2.5 py-1 text-[10px] font-bold text-brand-700">
-              {bundle.meta.subject} · {bundle.meta.grade} · {bundle.meta.variant ?? 'A'} 卷
-            </span>
-          </div>
-          <p className="mt-1 text-[12px] text-ink-soft/65">
-            {bundle.meta.examName} · {bundle.meta.durationMinutes} 分钟 · {bundle.meta.paperSize}{' '}
-            {bundle.meta.orientation === 'portrait' ? '竖版' : '横版'} ·{' '}
-            双面
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="cursor-pointer rounded-xl border border-brand-200 bg-white px-3 py-2 text-[11.5px] font-bold text-brand-700">
-            导入 JSON
-            <input
-              type="file"
-              accept=".json,application/json"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0]
-                if (f) void importJson(f)
-                e.target.value = ''
-              }}
-            />
-          </label>
-          <button type="button" onClick={goCardStudio} className="rounded-xl border border-brand-300 bg-brand-50 px-3 py-2 text-[11.5px] font-bold text-brand-700">
-            去制作答题卡
-          </button>
-          <button type="button" onClick={exportJson} className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-[11.5px] font-bold text-brand-700">
-            导出 JSON
-          </button>
-          <button type="button" onClick={exportBackendV2} className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-[11.5px] font-bold text-brand-700">
-            导出后端 v2
-          </button>
-          <button type="button" onClick={reset} className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-[11.5px] font-bold text-ink-soft">
-            恢复示例
-          </button>
-          <button type="button" onClick={() => window.print()} className="rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 px-4 py-2 text-[11.5px] font-bold text-white shadow-soft">
-            打印当前视图
-          </button>
-        </div>
-      </div>
-
-      <div className="pbp-no-print grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Stat label="题目" value={`${bundle.questions.length} 道`} />
-        <Stat label="总分" value={`${total} 分`} />
-        <Stat label="大题" value={`${bundle.sections.length} 个`} />
-        <Stat label="答题卡" value={`${bundle.answerCard.pages.length} 页`} />
-      </div>
-
-      <div className="pbp-no-print flex flex-wrap items-center gap-2">
-        <div className="inline-flex rounded-xl bg-brand-100/70 p-1">
-          {(Object.keys(VIEW_LABEL) as View[]).map((v) => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => setView(v)}
-              className={`rounded-lg px-4 py-1.5 text-[11.5px] font-bold transition ${
-                view === v ? 'bg-white text-brand-800 shadow-sm' : 'text-ink-soft/65'
-              }`}
-            >
-              {VIEW_LABEL[v]}
+            <button type="button" onClick={goCardStudio} className="rounded-xl border border-brand-300 bg-brand-50 px-4 py-2 text-[11.5px] font-bold text-brand-700">
+              去制作答题卡
             </button>
-          ))}
-        </div>
-        {view !== 'answerKey' && (
-          <div className="inline-flex items-center gap-1 rounded-xl border border-brand-200 bg-white px-1 py-1">
-            <span className="px-1.5 text-[10px] font-bold text-ink-soft/55">正反面</span>
-            <button
-              type="button"
-              onClick={() => setPreviewSide('front')}
-              className={`rounded-lg px-3 py-1 text-[10.5px] font-bold ${previewSide === 'front' ? 'bg-brand-600 text-white' : 'text-ink-soft/65'}`}
-            >
-              正面
-            </button>
-            <button
-              type="button"
-              onClick={() => setPreviewSide('back')}
-              disabled={!bundle.answerCard.pages.some((p) => p.side === 'back')}
-              className={`rounded-lg px-3 py-1 text-[10.5px] font-bold disabled:opacity-40 ${previewSide === 'back' ? 'bg-brand-600 text-white' : 'text-ink-soft/65'}`}
-            >
-              背面
+            <button type="button" onClick={() => window.print()} className="rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 px-4 py-2 text-[11.5px] font-bold text-white shadow-soft">
+              打印当前面
             </button>
           </div>
-        )}
-        {view === 'paper' && (
-          <div className="flex items-center gap-1 rounded-xl border border-brand-200 bg-white px-1 py-1">
-            <span className="px-1.5 text-[10px] font-bold text-ink-soft/55">试卷纸型</span>
-            {(Object.keys(PAPER_PRESETS) as PaperBundle['meta']['paperSize'][]).map((key) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => {
-                  const preset = PAPER_PRESETS[key]
-                  persist({ ...bundle, meta: { ...bundle.meta, paperSize: key, orientation: preset.orientation, updatedAt: new Date().toISOString() } })
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-brand-100 px-4 py-2.5">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10.5px] font-semibold text-ink-soft/60">
+            <span><b className="text-ink">{bundle.questions.length}</b> 道题</span>
+            <span><b className="text-ink">{total}</b> 分</span>
+            <span><b className="text-ink">{bundle.sections.length}</b> 个大题</span>
+            <span><b className="text-ink">{bundle.answerCard.pages.length}</b> 页答题卡</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-1">
+            <label className="cursor-pointer rounded-lg px-2 py-1 text-[10.5px] font-bold text-ink-soft/65 hover:bg-brand-50 hover:text-brand-700">
+              导入
+              <input
+                type="file"
+                accept=".json,application/json"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) void importJson(f)
+                  e.target.value = ''
                 }}
-                className={`rounded-lg px-2.5 py-1 text-[10.5px] font-bold ${
-                  bundle.meta.paperSize === key ? 'bg-brand-600 text-white' : 'text-ink-soft/65 hover:bg-brand-50'
-                }`}
-              >
-                {PAPER_PRESETS[key].label}
-              </button>
-            ))}
+              />
+            </label>
+            <button type="button" onClick={exportJson} className="rounded-lg px-2 py-1 text-[10.5px] font-bold text-ink-soft/65 hover:bg-brand-50 hover:text-brand-700">导出</button>
+            <button type="button" onClick={exportBackendV2} className="rounded-lg px-2 py-1 text-[10.5px] font-bold text-ink-soft/65 hover:bg-brand-50 hover:text-brand-700">导出后端 v2</button>
+            <button type="button" onClick={reset} className="rounded-lg px-2 py-1 text-[10.5px] font-bold text-ink-soft/65 hover:bg-brand-50 hover:text-brand-700">恢复示例</button>
           </div>
-        )}
-        <span className="text-[11px] text-ink-soft/55">
-          同一份 questions[]，三种视图；答案/分值只存一次
-        </span>
-        {errors.length > 0 && <span className="rounded-lg bg-red-50 px-2 py-1 text-[10.5px] font-bold text-red-600">{errors.length} 个错误</span>}
-        {warnings.length > 0 && <span className="rounded-lg bg-amber-50 px-2 py-1 text-[10.5px] font-bold text-amber-700">{warnings.length} 个提示</span>}
+        </div>
+      </div>
+
+      <div className="pbp-no-print rounded-2xl border border-brand-200/70 bg-white p-3 shadow-soft">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-ink-soft/45">视图</span>
+            <div className="inline-flex rounded-xl bg-brand-100/70 p-1">
+              {(Object.keys(VIEW_LABEL) as View[]).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setView(v)}
+                  className={`rounded-lg px-4 py-1.5 text-[11.5px] font-bold transition ${
+                    view === v ? 'bg-white text-brand-800 shadow-sm' : 'text-ink-soft/65'
+                  }`}
+                >
+                  {VIEW_LABEL[v]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {view !== 'answerKey' && (
+            <div className="flex items-center gap-1 rounded-xl border border-brand-200 bg-white px-1 py-1">
+              <span className="px-1.5 text-[10px] font-bold text-ink-soft/55">预览面</span>
+              <button
+                type="button"
+                onClick={() => setPreviewSide('front')}
+                className={`rounded-lg px-3 py-1 text-[10.5px] font-bold ${previewSide === 'front' ? 'bg-brand-600 text-white' : 'text-ink-soft/65'}`}
+              >
+                正面
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewSide('back')}
+                disabled={!bundle.answerCard.pages.some((p) => p.side === 'back')}
+                className={`rounded-lg px-3 py-1 text-[10.5px] font-bold disabled:opacity-40 ${previewSide === 'back' ? 'bg-brand-600 text-white' : 'text-ink-soft/65'}`}
+              >
+                背面
+              </button>
+            </div>
+          )}
+
+          {view === 'paper' && (
+            <div className="flex items-center gap-1 rounded-xl border border-brand-200 bg-white px-1 py-1">
+              <span className="px-1.5 text-[10px] font-bold text-ink-soft/55">纸型</span>
+              {(Object.keys(PAPER_PRESETS) as PaperBundle['meta']['paperSize'][]).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => {
+                    const preset = PAPER_PRESETS[key]
+                    persist({ ...bundle, meta: { ...bundle.meta, paperSize: key, orientation: preset.orientation, updatedAt: new Date().toISOString() } })
+                  }}
+                  className={`rounded-lg px-2.5 py-1 text-[10.5px] font-bold ${
+                    bundle.meta.paperSize === key ? 'bg-brand-600 text-white' : 'text-ink-soft/65 hover:bg-brand-50'
+                  }`}
+                >
+                  {PAPER_PRESETS[key].label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {(errors.length > 0 || warnings.length > 0) && (
+            <span className="ml-auto text-[10.5px] font-bold text-ink-soft/55">
+              {errors.length > 0 ? `${errors.length} 个错误` : ''}
+              {errors.length > 0 && warnings.length > 0 ? ' · ' : ''}
+              {warnings.length > 0 ? `${warnings.length} 个提示` : ''}
+            </span>
+          )}
+        </div>
       </div>
 
       {message && (
@@ -309,15 +315,6 @@ export default function PaperBundlePage() {
         原型页：数据保存在本机 localStorage；可导入/导出 paper.bundle.json。后端接入后只需替换存储层。
         <Link to="/papers" className="ml-1 font-bold text-brand-700">返回试卷库</Link>
       </p>
-    </div>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-brand-200/70 bg-white px-3 py-2.5 shadow-soft">
-      <p className="text-[10px] font-bold text-ink-soft/50">{label}</p>
-      <p className="mt-0.5 text-[15px] font-black text-ink">{value}</p>
     </div>
   )
 }
@@ -369,7 +366,7 @@ function PaperSheet({
   pageNo: number
   totalPages: number
 }) {
-  const columns = preset.w > 300 ? 2 : 1
+  const columns = preset.w > 300 ? 3 : 1
   return (
     <div
       className="pbp-paper-sheet relative z-[2] mx-auto bg-white px-[16mm] py-[12mm] text-ink shadow-[0_8px_40px_rgba(20,20,20,.12)]"
@@ -420,7 +417,7 @@ function PaperSheet({
       )}
 
       <div
-        className="pbp-paper-columns mt-4 text-[11px] leading-[1.7]"
+        className="pbp-paper-columns mt-3 text-[10.5px] leading-[1.55]"
         style={{ columnCount: columns, columnGap: '12mm' }}
       >
         {sections.map((section) => {
@@ -433,7 +430,7 @@ function PaperSheet({
                   {section.instructions || ''} · 共 {qs.length} 题 · {sectionTotalScore(bundle, section.id)} 分
                 </span>
               </div>
-              <div className="mt-2 space-y-3">
+              <div className="mt-1.5 space-y-2">
                 {qs.map((q) => (
                   <PaperQuestionView key={q.id} q={q} />
                 ))}
@@ -455,7 +452,7 @@ function PaperSheet({
 
 function PaperQuestionView({ q }: { q: PaperQuestion }) {
   return (
-    <article className="pbp-paper-question text-[11px] leading-[1.7]">
+    <article className="pbp-paper-question text-[10.5px] leading-[1.55]">
       <div className="flex items-start gap-1.5">
         <span className="shrink-0 font-black">{q.number}.</span>
         <div className="min-w-0 flex-1">
@@ -495,7 +492,11 @@ function CardPage({ bundle, page }: { bundle: PaperBundle; page: PaperCardPage }
     <div className="flex w-full max-w-[520px] flex-col items-center gap-1.5">
       <div
         className="pbp-answer-card-sheet relative z-[2] w-full overflow-hidden border border-neutral-300 bg-white shadow-[0_8px_40px_rgba(20,20,20,.12)]"
-        style={{ aspectRatio: `${page.canvas.width} / ${page.canvas.height}` }}
+        style={{
+          aspectRatio: `${page.canvas.width} / ${page.canvas.height}`,
+          ['--pbp-card-w' as string]: `${page.canvas.width * 0.7}mm`,
+          ['--pbp-card-h' as string]: `${page.canvas.height * 0.7}mm`,
+        }}
       >
         {page.markers.map((m) => (
           <span
