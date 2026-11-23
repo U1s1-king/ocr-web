@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { filesApi, papersApi, type CheckItem, type CheckResponse } from '../api'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { examsApi, filesApi, papersApi, type CheckItem, type CheckResponse } from '../api'
 import { IcAlert, IcCamera, IcCheck, IcClock, IcFile, IcImage, IcLayers, IcRefresh, IcSpark, IcX } from '../icons'
 import { PaperPicker } from '../pickers'
 import { Bar, Btn, Card, ErrorBar, Page, Ring, Skeleton } from '../ui'
@@ -22,6 +22,8 @@ const MIN_SIZE = 12
 
 export default function Capture() {
   const nav = useNavigate()
+  const [search] = useSearchParams()
+  const examId = Number(search.get('examId') || 0)
   const fileRef = useRef<HTMLInputElement>(null)
   const frameRef = useRef<HTMLDivElement>(null)
   const [step, setStep] = useState<Step>('pick')
@@ -125,6 +127,12 @@ export default function Capture() {
       })
       const up = await filesApi.upload(file, (p) => setPct(Math.max(6, Math.round(p * 0.55))))
       setPct(66)
+      if (examId > 0) {
+        await examsApi.grade(examId, [up.fileId])
+        setPct(100)
+        nav(`/m/exams/${examId}`, { replace: true })
+        return
+      }
       const check = await papersApi.check(paperId ?? 1, [up.fileId])
       setPct(100)
       setResult(check)

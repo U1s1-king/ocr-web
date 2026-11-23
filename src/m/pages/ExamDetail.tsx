@@ -93,6 +93,9 @@ export default function ExamDetail() {
       actions={
         <div className="flex gap-2">
           {(exam.demo || results.demo) && <DemoTag />}
+          <button type="button" className="mo-chip" onClick={() => nav(`/m/capture?examId=${eid}`)}>
+            <IcCamera style={{ fontSize: 14 }} /> 拍照批改
+          </button>
           <button type="button" className="mo-icon-btn" aria-label="删除考试" onClick={remove}>
             <IcTrash style={{ fontSize: 16 }} />
           </button>
