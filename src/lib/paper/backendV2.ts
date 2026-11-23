@@ -220,20 +220,33 @@ import { backAsDoc } from '../card/back'
 import type { CardDoc } from '../card/types'
 
 function pageFromCardDoc(doc: CardDoc, page: number): PaperV2Page {
+  const prefix = page > 1 ? `p${page}-` : ''
+  const maxH = doc.content.canvas.height
+  const maxW = doc.content.canvas.width
+  const fit = <T extends { region: { x: number; y: number; width: number; height: number } }>(item: T): T => {
+    const r = item.region
+    if (r.y >= maxH) r.y = Math.max(0, maxH - 8)
+    if (r.x >= maxW) r.x = Math.max(0, maxW - 8)
+    r.width = Math.min(r.width, maxW - r.x)
+    r.height = Math.min(r.height, maxH - r.y)
+    return item
+  }
   return {
     page,
     unit: 'canvas',
     canvas: doc.content.canvas,
     markers: doc.content.markers as Marker[],
-    blocks: (doc.content.blocks ?? []) as Block[],
-    questions: (doc.content.questions ?? []).map((q) => ({
-      id: q.id,
-      displayNumber: q.displayNumber,
-      type: q.type,
-      score: Number(q.score) || 0,
-      region: q.region,
-      ...(q.type === 'mark' ? { choices: q.choices ?? [] } : {}),
-    })) as PaperV2Question[],
+    blocks: (doc.content.blocks ?? []).map((b) => fit({ ...b, id: `${prefix}${b.id}` })) as Block[],
+    questions: (doc.content.questions ?? []).map((q) =>
+      fit({
+        id: `${prefix}${q.id}`,
+        displayNumber: q.displayNumber,
+        type: q.type,
+        score: Number(q.score) || 0,
+        region: { ...q.region },
+        ...(q.type === 'mark' ? { choices: q.choices ?? [] } : {}),
+      }),
+    ) as PaperV2Question[],
     ...(doc.content.barcode ? { barcode: doc.content.barcode as Barcode } : {}),
   }
 }
