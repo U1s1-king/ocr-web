@@ -23,6 +23,13 @@ const VIEW_LABEL: Record<View, string> = {
   answerKey: '答案页',
 }
 
+/** 高考常见试卷纸型：A3 / 8K 为横版，A4 为纵版 */
+const PAPER_PRESETS: Record<PaperBundle['meta']['paperSize'], { w: number; h: number; label: string; orientation: 'portrait' | 'landscape' }> = {
+  A3: { w: 420, h: 297, label: 'A3 横版', orientation: 'landscape' },
+  '8K': { w: 370, h: 260, label: '8K 横版', orientation: 'landscape' },
+  A4: { w: 210, h: 297, label: 'A4 纵版', orientation: 'portrait' },
+}
+
 function loadBundle(): PaperBundle {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -40,6 +47,9 @@ export default function PaperBundlePage() {
   const [view, setView] = useState<View>('paper')
   const [message, setMessage] = useState('')
 
+  const paperPreset = PAPER_PRESETS[bundle.meta.paperSize]
+  const answerCardPage = bundle.answerCard.pages[0]?.canvas ?? { width: 300, height: 424.29 }
+  const printPage = view === 'paper' ? `${paperPreset.w}mm ${paperPreset.h}mm` : `${answerCardPage.width * 0.7}mm ${answerCardPage.height * 0.7}mm`
   const total = bundleTotalScore(bundle)
   const issues = useMemo(() => validatePaperBundle(bundle), [bundle])
   const errors = issues.filter((i) => i.level === 'error')
@@ -112,8 +122,21 @@ export default function PaperBundlePage() {
         .pbp-answer-card-sheet .pbp-question-type {
           font-size: calc(var(--pbp-card-scale) * 8px);
         }
+        .pbp-paper-sheet {
+          width: min(100%, var(--paper-w, 420mm));
+          min-height: var(--paper-h, 297mm);
+        }
+        .pbp-paper-columns {
+          column-gap: 12mm;
+        }
+        .pbp-paper-columns section {
+          break-inside: avoid-column;
+        }
+        .pbp-paper-question {
+          break-inside: avoid;
+        }
         @media print {
-          @page { size: A4; margin: 0; }
+          @page { size: ${printPage}; margin: 0; }
           body { background: #fff !important; }
           .pbp-no-print, .site-sidebar, .sidebar-toggle-btn, .mo-dock-wrap { display: none !important; }
           main { padding: 0 !important; }
@@ -121,7 +144,13 @@ export default function PaperBundlePage() {
           main > div > div { animation: none !important; transform: none !important; }
           .pbp-page { display: block !important; }
           .pbp-print-area { display: block !important; }
-          .pbp-paper-sheet { box-shadow: none !important; margin: 0 !important; }
+          .pbp-paper-sheet {
+            width: var(--paper-w) !important;
+            min-height: var(--paper-h) !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            border: 0 !important;
+          }
           .pbp-answer-card-sheet {
             --pbp-card-scale: 1;
             width: 210mm !important;
@@ -203,6 +232,26 @@ export default function PaperBundlePage() {
             </button>
           ))}
         </div>
+        {view === 'paper' && (
+          <div className="flex items-center gap-1 rounded-xl border border-brand-200 bg-white px-1 py-1">
+            <span className="px-1.5 text-[10px] font-bold text-ink-soft/55">试卷纸型</span>
+            {(Object.keys(PAPER_PRESETS) as PaperBundle['meta']['paperSize'][]).map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => {
+                  const preset = PAPER_PRESETS[key]
+                  persist({ ...bundle, meta: { ...bundle.meta, paperSize: key, orientation: preset.orientation, updatedAt: new Date().toISOString() } })
+                }}
+                className={`rounded-lg px-2.5 py-1 text-[10.5px] font-bold ${
+                  bundle.meta.paperSize === key ? 'bg-brand-600 text-white' : 'text-ink-soft/65 hover:bg-brand-50'
+                }`}
+              >
+                {PAPER_PRESETS[key].label}
+              </button>
+            ))}
+          </div>
+        )}
         <span className="text-[11px] text-ink-soft/55">
           同一份 questions[]，三种视图；答案/分值只存一次
         </span>
@@ -217,7 +266,7 @@ export default function PaperBundlePage() {
       )}
 
       <div className="pbp-print-area">
-        {view === 'paper' && <PaperView bundle={bundle} />}
+        {view === 'paper' && <PaperView bundle={bundle} preset={paperPreset} />}
         {view === 'answerCard' && <AnswerCardView bundle={bundle} />}
         {view === 'answerKey' && <AnswerKeyView bundle={bundle} />}
       </div>
@@ -241,54 +290,102 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 /* ============================== 试卷视图 ============================== */
 
-function PaperView({ bundle }: { bundle: PaperBundle }) {
+type PaperPreset = (typeof PAPER_PRESETS)[PaperBundle['meta']['paperSize']]
+
+function PaperView({ bundle, preset }: { bundle: PaperBundle; preset: PaperPreset }) {
+  const width = preset.w
+  const columns = width > 300 ? 2 : 1
+  const totalPages = Math.max(1, Math.ceil(bundle.questions.length / 38))
   return (
-    <div className="pbp-paper-sheet mx-auto w-full max-w-[210mm] bg-white px-[14mm] py-[12mm] text-ink shadow-[0_8px_40px_rgba(20,20,20,.12)]">
-      <header className="border-b-2 border-ink/80 pb-3 text-center">
-        <h2 className="text-[20px] font-black tracking-wide">{bundle.meta.title}</h2>
-        <p className="mt-1 text-[11px] text-ink-soft/70">
-          {bundle.meta.examName} · {bundle.meta.subject} · {bundle.meta.durationMinutes} 分钟 · 满分 {bundleTotalScore(bundle)} 分
+    <div
+      className="pbp-paper-sheet relative z-[2] mx-auto bg-white px-[16mm] py-[12mm] text-ink shadow-[0_8px_40px_rgba(20,20,20,.12)]"
+      style={{
+        ['--paper-w' as string]: `${preset.w}mm`,
+        ['--paper-h' as string]: `${preset.h}mm`,
+      }}
+    >
+      <div className="flex items-center justify-between border-b border-ink/30 pb-1.5 text-[9px] font-bold tracking-widest text-ink-soft/70">
+        <span>绝密★启用前</span>
+        <span>
+          {preset.label} · {bundle.meta.subject}试卷 · {bundle.meta.variant ?? 'A'} 卷
+        </span>
+      </div>
+
+      <header className="pt-4 text-center">
+        <p className="text-[11px] font-semibold tracking-[0.2em] text-ink-soft/75">
+          2026 年普通高等学校招生全国统一考试（模拟）
+        </p>
+        <h2 className="mt-1 text-[24px] font-black tracking-[0.18em]">{bundle.meta.subject}试卷</h2>
+        <p className="mt-1 text-[10px] text-ink-soft/65">
+          {bundle.meta.examName} · {bundle.meta.durationMinutes} 分钟 · 满分 {bundleTotalScore(bundle)} 分
         </p>
       </header>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-ink/15 px-3 py-2 text-[11px] text-ink-soft/70">
-        <span>姓名：__________</span>
-        <span>准考证号：____________</span>
-        <span>座号：______</span>
-        <span>得分：______</span>
+      <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-1 border-y border-ink/20 py-2 text-[10px] text-ink-soft/85 sm:grid-cols-4">
+        <span>姓名：________________</span>
+        <span>准考证号：________________</span>
+        <span>考场号：____________</span>
+        <span>座位号：____________</span>
       </div>
 
-      {bundle.sections.map((section) => {
-        const qs = questionsOfSection(bundle, section.id)
-        return (
-          <section key={section.id} className="mt-5">
-            <div className="flex items-baseline justify-between gap-3 border-b border-ink/15 pb-1.5">
-              <h3 className="text-[14px] font-black">{section.title}</h3>
-              <span className="text-[10px] font-semibold text-ink-soft/55">
-                {section.instructions || ''} · 共 {qs.length} 题 · {sectionTotalScore(bundle, section.id)} 分
-              </span>
-            </div>
-            <div className="mt-3 space-y-4">
-              {qs.map((q) => (
-                <PaperQuestionView key={q.id} q={q} />
-              ))}
-            </div>
-          </section>
-        )
-      })}
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[10px] font-semibold text-ink-soft/80">
+        <span>试卷类型：{bundle.meta.variant ?? 'A'}</span>
+        <span>满分：{bundleTotalScore(bundle)} 分</span>
+        <span>考试时间：{bundle.meta.durationMinutes} 分钟</span>
+        <span className="text-ink-soft/50">密封线内不要答题</span>
+      </div>
+
+      <div className="mt-3 border border-ink/25 px-3 py-2 text-[9px] leading-[1.65] text-ink-soft/80">
+        <p className="font-bold text-ink">注意事项：</p>
+        <p>1. 答题前，考生务必将姓名、准考证号、考场号、座位号填写清楚。</p>
+        <p>2. 选择题使用 2B 铅笔填涂；非选择题使用 0.5 毫米黑色签字笔作答。</p>
+        <p>3. 请按题号在答题卡指定区域内作答，超出答题区域书写的答案无效。</p>
+        <p>4. 保持答题卡清洁，不要折叠、不要弄破。</p>
+      </div>
+
+      <div
+        className="pbp-paper-columns mt-4 text-[11px] leading-[1.7]"
+        style={{ columnCount: columns, columnGap: '12mm' }}
+      >
+        {bundle.sections.map((section) => {
+          const qs = questionsOfSection(bundle, section.id)
+          return (
+            <section key={section.id} className="mb-5">
+              <div className="flex items-baseline justify-between gap-3 border-b border-ink/20 pb-1">
+                <h3 className="text-[13px] font-black">{section.title}</h3>
+                <span className="shrink-0 text-[9px] font-semibold text-ink-soft/55">
+                  {section.instructions || ''} · 共 {qs.length} 题 · {sectionTotalScore(bundle, section.id)} 分
+                </span>
+              </div>
+              <div className="mt-2 space-y-3">
+                {qs.map((q) => (
+                  <PaperQuestionView key={q.id} q={q} />
+                ))}
+              </div>
+            </section>
+          )
+        })}
+      </div>
+
+      <footer className="mt-4 flex items-center justify-between border-t border-ink/20 pt-1.5 text-[9px] text-ink-soft/60">
+        <span>密封线内不要答题</span>
+        <span>
+          {bundle.meta.subject}试卷 · {preset.label} · 第 1 页 / 共 {totalPages} 页
+        </span>
+      </footer>
     </div>
   )
 }
 
 function PaperQuestionView({ q }: { q: PaperQuestion }) {
   return (
-    <article className="text-[12px] leading-[1.75]">
-      <div className="flex items-start gap-2">
+    <article className="pbp-paper-question text-[11px] leading-[1.7]">
+      <div className="flex items-start gap-1.5">
         <span className="shrink-0 font-black">{q.number}.</span>
         <div className="min-w-0 flex-1">
           <p className="whitespace-pre-wrap">{q.stem}</p>
           {q.options.length > 0 && (
-            <div className="mt-1 grid grid-cols-1 gap-x-4 gap-y-0.5 sm:grid-cols-2">
+            <div className="mt-1 grid grid-cols-1 gap-x-3 gap-y-0.5 sm:grid-cols-2">
               {q.options.map((o) => (
                 <p key={o.key} className="whitespace-pre-wrap">
                   <span className="font-semibold">{o.key}.</span> {o.text}
@@ -297,7 +394,7 @@ function PaperQuestionView({ q }: { q: PaperQuestion }) {
             </div>
           )}
         </div>
-        <span className="shrink-0 text-[10px] font-bold text-ink-soft/50">（{q.score} 分）</span>
+        <span className="shrink-0 text-[9px] font-bold text-ink-soft/55">（{q.score} 分）</span>
       </div>
     </article>
   )
@@ -322,7 +419,7 @@ function CardPage({ bundle, page }: { bundle: PaperBundle; page: PaperCardPage }
   return (
     <div className="flex w-full max-w-[520px] flex-col items-center gap-1.5">
       <div
-        className="pbp-answer-card-sheet relative w-full overflow-hidden border border-neutral-300 bg-white shadow-[0_8px_40px_rgba(20,20,20,.12)]"
+        className="pbp-answer-card-sheet relative z-[2] w-full overflow-hidden border border-neutral-300 bg-white shadow-[0_8px_40px_rgba(20,20,20,.12)]"
         style={{ aspectRatio: `${page.canvas.width} / ${page.canvas.height}` }}
       >
         {page.markers.map((m) => (

@@ -22,8 +22,10 @@ export interface PaperBundleMeta {
   grade: string
   examName: string
   durationMinutes: number
-  paperSize: 'A4' | 'A3'
+  paperSize: 'A4' | 'A3' | '8K'
   orientation: 'portrait' | 'landscape'
+  /** 答题卡纸型，和试卷纸型可以不同 */
+  answerCardSize?: 'A4' | 'A3'
   sides: 1 | 2
   variant?: 'A' | 'B'
   status: 'draft' | 'published' | 'archived'
@@ -81,8 +83,10 @@ export interface PaperBlock {
 export interface PaperCardPage {
   id: string
   side: PaperSide
-  paperSize: 'A4' | 'A3'
+  paperSize: 'A4' | 'A3' | '8K'
   orientation: 'portrait' | 'landscape'
+  /** 答题卡纸型，和试卷纸型可以不同 */
+  answerCardSize?: 'A4' | 'A3'
   canvas: { width: number; height: number; unit: 'canvas' }
   markers: { id: string; x: number; y: number; size: number }[]
   blocks: PaperBlock[]
