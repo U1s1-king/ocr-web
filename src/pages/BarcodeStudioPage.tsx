@@ -327,6 +327,20 @@ export default function BarcodeStudioPage() {
     }
   }
 
+  async function printTestLabel() {
+    setSerialBusy(true)
+    try {
+      const target = port ?? (await requestXp420bPort())
+      setPort(target)
+      await printXp420bLabels(target, design, [{ ...DEFAULT_PERSON, school: '测试学校', name: '测试标签' }])
+      toast('测试标签已发送到 XP-420B', 'ok')
+    } catch (e) {
+      toast(e instanceof Error ? e.message : '测试打印失败', 'err')
+    } finally {
+      setSerialBusy(false)
+    }
+  }
+
   function renderField(field: BarcodeField, person: BarcodePerson, interactive: boolean) {
     const value = fieldValue(field, person, design.staticText)
     return (
@@ -585,6 +599,9 @@ export default function BarcodeStudioPage() {
               </span>
               <Button variant="ghost" className="ml-auto" onClick={() => void connectPrinter()} disabled={serialBusy}>
                 {port ? '已连接 XP-420B' : '连接蓝牙打印机'}
+              </Button>
+              <Button variant="ghost" onClick={() => void printTestLabel()} disabled={serialBusy}>
+                测试标签
               </Button>
               <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => void printBluetooth()} disabled={printPeople.length === 0 || serialBusy}>
                 蓝牙标签打印
