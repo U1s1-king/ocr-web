@@ -59,7 +59,7 @@ export function BarcodeSvg({
         displayValue: showText,
         width: 2,
         height: 60,
-        margin: 0,
+        margin: 10,
         background: '#ffffff',
         lineColor: '#111111',
         fontSize: 15,

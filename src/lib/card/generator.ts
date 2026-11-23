@@ -7,7 +7,7 @@
  */
 import type { Block, ExamContent, Question } from '../../api/types'
 import { ANSWER_CARD_BARCODE_AREA } from '../barcode/templates'
-import { createSubjectBack } from './back'
+import { createSubjectBack, withHeaderFromFront } from './back'
 import { pageProfileOf } from './reflow'
 import {
   canvasOf,
@@ -535,7 +535,21 @@ function buildOnce(spec: CardSpec, rowH: number, fontSize: number, subjCols?: nu
   }
 
   const afterHeader = layoutHeader(b, spec, ctx.marginTop)
-  const subjectiveBottom = footerY - 1
+  // 高考真卡底部有题号/得分栏，预留 18mm
+  let scoreTop: number | null = null
+  if (spec.gaokao) {
+    scoreTop = footerY - 18
+    const sectionTitles = spec.objectiveGroups.map((g) => g.title.split(/[、.．]/)[0]).slice(0, 6)
+    const scoreText = `题号   ${sectionTitles.join('    ') || '一    二    三'}    总分
+得分`
+    b.addBlock(
+      scoreText,
+      { x: ctx.contentX0, y: scoreTop, w: ctx.contentW, h: 16 },
+      { fontSize: 2.9, fontWeight: 'bold', textAlign: 'left', lineHeight: 1.8 },
+      { kind: 'scoreBox', boxed: true },
+    )
+  }
+  const subjectiveBottom = (scoreTop ?? footerY) - 2
   const splitA3 = spec.paperSize === 'A3' && spec.orientation === 'landscape' && spec.objectiveGroups.length > 0 && spec.subjectiveGroups.length > 0
   let overflow = false
 
@@ -612,6 +626,36 @@ export interface GeneratedCard {
  * - 主观题按题量从中间分开，背面每个大题占满一整栏
  * - 数学/理科背面三栏，文科两栏，语文/英语一栏
  */
+function finalizeTwoPage(front: CardDoc, back: CardDoc): CardDoc {
+  const page = paperMm(front.meta.paperSize, front.meta.orientation)
+  const subject = front.meta.subject || '答题卡'
+  const frontFooter = (front.content.blocks ?? []).find((b) => front.bmeta[b.id]?.kind === 'pageFooter')
+  if (frontFooter) frontFooter.text = `${subject}答题卡 第1面（共2面）`
+  const backBlocks = [...(back.content.blocks ?? [])]
+  const existing = backBlocks.find((b) => back.bmeta[b.id]?.kind === 'pageFooter')
+  if (existing) existing.text = `${subject}答题卡 第2面（共2面）`
+  else {
+    const id = 'back-page-footer'
+    backBlocks.push({
+      id,
+      type: 'text',
+      text: `${subject}答题卡 第2面（共2面）`,
+      region: { x: mm2u(14), y: mm2u(page.h - 14), width: mm2u(page.w - 28), height: mm2u(4.4) },
+      style: { fontSize: 2.8, fontWeight: 'bold', textAlign: 'center', lineHeight: 1.1 },
+    })
+    back.bmeta[id] = { kind: 'pageFooter' }
+  }
+  return {
+    ...front,
+    back: {
+      content: { ...back.content, blocks: backBlocks },
+      qmeta: back.qmeta,
+      bmeta: back.bmeta,
+      hidden: back.hidden ?? [],
+    },
+  }
+}
+
 function splitSubjectPages(front: CardDoc): { doc: CardDoc } {
   const page = paperMm(front.meta.paperSize, front.meta.orientation)
   const profile = pageProfileOf(front)
@@ -621,8 +665,8 @@ function splitSubjectPages(front: CardDoc): { doc: CardDoc } {
 
   // 少于 4 道主观题不拆，保持现有背面科目版式
   if (subjective.length < 4) {
-    const back = createSubjectBack(front)
-    return { doc: { ...front, back: { content: back.content, qmeta: back.qmeta, bmeta: back.bmeta, hidden: [] } } }
+    const back = withHeaderFromFront(front, createSubjectBack(front))
+    return { doc: finalizeTwoPage(front, back) }
   }
 
   const half = Math.ceil(subjective.length / 2)
@@ -678,7 +722,7 @@ function splitSubjectPages(front: CardDoc): { doc: CardDoc } {
     bmeta,
     hidden: [],
   }
-  return { doc: { ...front, back } }
+  return { doc: finalizeTwoPage(front, { ...front, ...back }) }
 }
 
 /**

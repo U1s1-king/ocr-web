@@ -4,6 +4,8 @@ import { makeMockPaperBundle, PAPER_SUBJECTS, type PaperSubject } from '../lib/p
 import { saveActiveBundle } from '../lib/paper/active'
 import { requestPrint } from '../lib/print'
 import { bundleToPaperV2 } from '../lib/paper/backendV2'
+import { paperV2ToBundle } from '../lib/paper/fromV2'
+import { papersApi, errorText } from '../m/api'
 import {
   bundleTotalScore,
   questionsOfSection,
@@ -62,6 +64,28 @@ export default function PaperBundlePage() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
     } catch {
       /* ignore */
+    }
+  }
+
+  async function loadBackendPaper() {
+    const input = window.prompt('输入后端试卷 id（GET /api/v1/papers/{id} 的 id）')
+    if (!input) return
+    const id = Number(input)
+    if (!Number.isFinite(id) || id <= 0) {
+      setMessage('试卷 id 不合法')
+      return
+    }
+    try {
+      const detail = await papersApi.get(id)
+      if (!detail.rawPaper) {
+        setMessage('该试卷还没有 v2 内容（paper 为空）')
+        return
+      }
+      persist(paperV2ToBundle({ id, name: detail.name, paper: detail.rawPaper }))
+      setPreviewSide('front')
+      setMessage(`已从后端载入试卷 #${id}：${detail.name}`)
+    } catch (e) {
+      setMessage(`载入后端试卷失败：${errorText(e)}`)
     }
   }
 
@@ -205,6 +229,9 @@ export default function PaperBundlePage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <button type="button" onClick={() => void loadBackendPaper()} className="rounded-xl border border-brand-300 bg-brand-50 px-3 py-2 text-[11.5px] font-bold text-brand-700">
+            载入后端试卷
+          </button>
           <label className="cursor-pointer rounded-xl border border-brand-200 bg-white px-3 py-2 text-[11.5px] font-bold text-brand-700">
             导入 JSON
             <input

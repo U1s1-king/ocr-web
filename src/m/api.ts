@@ -368,9 +368,9 @@ export const examsApi = {
 export interface BankQuestion {
   id: number
   subject: string
+  /** 后端统一返回「客观 / 主观」 */
   type: string
-  stem: string
-  options?: Array<{ key: string; text: string }>
+  question: string
   answer?: string | null
   analysis?: string | null
 }
@@ -383,8 +383,18 @@ export interface QuestionList {
 }
 
 export const questionsApi = {
-  list: (params: { subject?: string; type?: string; offset?: number; limit?: number } = {}) =>
-    request<QuestionList>(`${P}/questions${qs(params)}`),
+  list: async (params: { subject?: string; type?: string; offset?: number; limit?: number } = {}): Promise<QuestionList> => {
+    const raw = await request<{
+      data?: BankQuestion[]
+      meta?: { total?: number; limit?: number; offset?: number }
+    }>(`${P}/questions${qs(params)}`)
+    return {
+      items: raw.data ?? [],
+      total: raw.meta?.total ?? 0,
+      limit: raw.meta?.limit ?? params.limit ?? 20,
+      offset: raw.meta?.offset ?? params.offset ?? 0,
+    }
+  },
 }
 
 /* ================= 人工复核 ================= */

@@ -4,7 +4,7 @@ import { Badge, Button, Card } from '../components/ui'
 import { questionsApi, errorText, type BankQuestion } from '../m/api'
 
 const SUBJECTS = ['全部', '语文', '数学', '英语', '物理', '化学', '生物', '历史', '地理', '政治']
-const TYPES = ['全部', 'choice', 'blank', 'subjective']
+const TYPES = ['全部', '客观', '主观']
 
 /** 只读题库浏览：GET /api/v1/questions */
 export default function QuestionBankPage() {
@@ -89,14 +89,7 @@ export default function QuestionBankPage() {
                 <span className="rounded bg-brand-50 px-1.5 py-0.5 text-[9.5px] font-bold text-brand-700">{q.subject}</span>
                 <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-[9.5px] font-bold text-ink-soft/60">{q.type}</span>
               </div>
-              <p className="mt-2 whitespace-pre-wrap text-[12.5px] font-semibold leading-relaxed text-ink">{q.stem}</p>
-              {q.options && q.options.length > 0 && (
-                <div className="mt-1.5 grid gap-1 sm:grid-cols-2">
-                  {q.options.map((o) => (
-                    <p key={o.key} className="text-[11.5px] text-ink-soft/75">{o.key}. {o.text}</p>
-                  ))}
-                </div>
-              )}
+              <p className="mt-2 whitespace-pre-wrap text-[12.5px] font-semibold leading-relaxed text-ink">{q.question}</p>
               {q.answer && <p className="mt-1.5 text-[11px] text-brand-700">答案：{q.answer}</p>}
               {q.analysis && <p className="mt-1 text-[10.5px] text-ink-soft/55">解析：{q.analysis}</p>}
             </Card>

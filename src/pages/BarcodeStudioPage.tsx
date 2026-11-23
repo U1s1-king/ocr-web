@@ -4,9 +4,11 @@ import { PageHeader } from '../components/PageHeader'
 import { Badge, Button, Card, Field, inputCls } from '../components/ui'
 import { ChevronRightIcon, DownloadIcon, TrashIcon } from '../components/icons'
 import { studentsApi } from '../m/api'
+import { useToast } from '../components/Toast'
 import { parseTableFile } from '../lib/barcode/importData'
 import { BarcodeSvg } from '../lib/card/barcode'
 import { requestPrint } from '../lib/print'
+import { isXp420bSupported, printXp420bLabels, requestXp420bPort, type Xp420bPort } from '../lib/hardware/xp420b'
 import type { CardBarcodeFormat } from '../lib/card/types'
 import {
   DEFAULT_PERSON,
@@ -68,6 +70,7 @@ function fieldValue(field: BarcodeField, person: BarcodePerson, staticText?: Rec
 
 /** 条形码制作：单面标签自由设计 + 批量数据源 */
 export default function BarcodeStudioPage() {
+  const toast = useToast()
   const nav = useNavigate()
   const [design, setDesign] = useState<BarcodeDesign>(readDesign)
   const [presetId, setPresetId] = useState(LABEL_PRESETS[0].id)
@@ -83,6 +86,8 @@ export default function BarcodeStudioPage() {
   const [manualBarcode, setManualBarcode] = useState('')
   const [zoom, setZoom] = useState(2)
   const fileRef = useRef<HTMLInputElement>(null)
+  const [port, setPort] = useState<Xp420bPort | null>(null)
+  const [serialBusy, setSerialBusy] = useState(false)
   const drag = useRef<{ id: string; sx: number; sy: number; x: number; y: number } | null>(null)
 
   useEffect(() => {
@@ -281,6 +286,38 @@ export default function BarcodeStudioPage() {
       doubleSided: false,
       source: '/papers/barcode',
     })
+  }
+
+  async function connectPrinter() {
+    if (!isXp420bSupported()) {
+      toast('当前浏览器不支持 Web Serial，请用桌面版 Chrome/Edge 打开 HTTPS 页面', 'err')
+      return
+    }
+    setSerialBusy(true)
+    try {
+      const p = await requestXp420bPort()
+      setPort(p)
+      toast('XP-420B 已绑定，可点「蓝牙标签打印」', 'ok')
+    } catch (e) {
+      toast(e instanceof Error ? e.message : '绑定失败', 'err')
+    } finally {
+      setSerialBusy(false)
+    }
+  }
+
+  async function printBluetooth() {
+    if (!printPeople.length) return
+    setSerialBusy(true)
+    try {
+      const target = port ?? (await requestXp420bPort())
+      setPort(target)
+      const count = await printXp420bLabels(target, design, printPeople)
+      toast(`已发送 ${count} 张 TSPL 标签到 XP-420B`, 'ok')
+    } catch (e) {
+      toast(e instanceof Error ? e.message : '蓝牙打印失败', 'err')
+    } finally {
+      setSerialBusy(false)
+    }
   }
 
   function renderField(field: BarcodeField, person: BarcodePerson, interactive: boolean) {
@@ -539,10 +576,17 @@ export default function BarcodeStudioPage() {
               <span className="text-[10px] text-ink-soft/55">
                 共 {printPeople.length} 张 · {printMode === 'roll' ? `${printPeople.length} 页` : `${sheetPages.length} 页 · 每页 ${sheet.capacity} 张`}
               </span>
-              <Button className="ml-auto" onClick={print} disabled={printPeople.length === 0}>打印 / 存 PDF</Button>
+              <Button variant="ghost" className="ml-auto" onClick={() => void connectPrinter()} disabled={serialBusy}>
+                {port ? '已连接 XP-420B' : '连接蓝牙打印机'}
+              </Button>
+              <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => void printBluetooth()} disabled={printPeople.length === 0 || serialBusy}>
+                蓝牙标签打印
+              </Button>
+              <Button onClick={print} disabled={printPeople.length === 0}>打印 / 存 PDF</Button>
             </div>
             <p className="mt-2 text-[9.5px] leading-relaxed text-ink-soft/50">
-              条形码内容为「前缀 + 考号 + 后缀」；拖拽时只移动当前组件，不会留下残影。打印请选择 100% 缩放、无边距。
+              XP-420B 走 Web Serial + TSPL，需 Chrome/Edge 桌面版并先在系统蓝牙中配对；普通 A4 打印仍用浏览器打印。
+              条形码内容为「前缀 + 考号 + 后缀」；打印请选择 100% 缩放、无边距。
             </p>
           </Card>
         </div>

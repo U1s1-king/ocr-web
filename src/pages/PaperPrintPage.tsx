@@ -24,7 +24,7 @@ export default function PaperPrintPage() {
   const [doc, setDoc] = useState<ReturnType<typeof takeStashedDoc>>(null)
   const [name, setName] = useState('')
   const [err, setErr] = useState('')
-  const [zoom, setZoom] = useState(0.8)
+  const [zoom, setZoom] = useState(0.4)
 
   const query = useMemo(() => {
     const hashQ = window.location.hash.split('?')[1] ?? ''
@@ -130,7 +130,7 @@ export default function PaperPrintPage() {
         </div>
       </div>
 
-      <div className="pp-wrap flex items-start justify-center gap-6 p-6">
+      <div className="pp-wrap flex flex-wrap items-start justify-center gap-6 p-6">
         {err ? (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-8 text-center text-[12.5px] font-semibold text-amber-800">
             {err}

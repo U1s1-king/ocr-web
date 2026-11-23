@@ -3,6 +3,7 @@ import {
   cloneDoc,
   mm2u,
   paperMm,
+  u2mm,
   type CardBack,
   type CardDoc,
   type QuestionMeta,
@@ -185,6 +186,27 @@ export function createSubjectBack(front: CardDoc): CardDoc {
     qmeta[id] = { style: 'blank', rows: 1, label: `${15 + i}` }
   }
   return finish(front, blocks, questions, qmeta, bmeta)
+}
+
+/** 把正面表头/姓名/注意事项/定位点复制到背面，保证正反面对位一致 */
+export function withHeaderFromFront(front: CardDoc, back: CardDoc): CardDoc {
+  const page = paperMm(front.meta.paperSize, front.meta.orientation)
+  const kinds = new Set(['examLine', 'title', 'student', 'notice', 'legend', 'examNo', 'barcode', 'paperType'])
+  const header = (front.content.blocks ?? []).filter((b) => kinds.has(front.bmeta[b.id]?.kind ?? ''))
+  if (!header.length) return back
+  const headerBottom = Math.max(...header.map((b) => u2mm(b.region.y) + u2mm(b.region.height)))
+  const shift = mm2u(headerBottom + 2)
+  const bottom = mm2u(page.h - 10)
+  const questions = (back.content.questions ?? []).map((q) => {
+    const region = { ...q.region, y: q.region.y + shift }
+    region.height = Math.max(region.height * 0.35, Math.min(region.height, bottom - region.y))
+    return { ...q, region }
+  })
+  const blocks = [
+    ...header.map((b) => ({ ...b })),
+    ...(back.content.blocks ?? []).map((b) => ({ ...b, region: { ...b.region, y: b.region.y + shift } })),
+  ]
+  return { ...back, content: { ...back.content, blocks, questions } }
 }
 
 function finish(
