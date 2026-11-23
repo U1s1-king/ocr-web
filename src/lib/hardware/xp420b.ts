@@ -87,8 +87,9 @@ function tsplForLabel(design: BarcodeDesign, person: BarcodePerson): string {
       const h = Math.max(8, dots(field.h))
       lines.push(`BARCODE ${x},${y},"128",${h},${design.showText ? 1 : 0},0,2,2,"${value}"`)
     } else {
-      // 字体 "3" = 常用点阵字体；中文使用 TSS24.BF2 更好，但部分固件只自带英文点阵
-      lines.push(`TEXT ${x},${y},"3",0,1,1,"${value}"`)
+      // 中文使用 TSS24.BF2；纯英文数字用点阵字体 3
+      const font = /[㐀-鿿]/.test(value) ? 'TSS24.BF2' : '3'
+      lines.push(`TEXT ${x},${y},"${font}",0,1,1,"${value}"`)
     }
   }
   lines.push('PRINT 1,1', '')
