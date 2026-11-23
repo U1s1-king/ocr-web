@@ -14,7 +14,32 @@ const H = 424.29
 
 const region = (x: number, y: number, width: number, height: number) => ({ x, y, width, height })
 
-const subjectNames = ['集合', '函数', '三角函数', '数列', '导数', '概率', '立体几何', '解析几何']
+export const PAPER_SUBJECTS = ['语文', '数学', '英语', '物理', '化学', '生物', '历史', '地理', '政治'] as const
+export type PaperSubject = (typeof PAPER_SUBJECTS)[number]
+
+const SUBJECT_TOPICS: Record<string, string[]> = {
+  语文: ['现代文阅读', '古诗文阅读', '语言文字运用', '写作'],
+  数学: ['集合', '函数', '三角函数', '数列', '导数', '概率', '立体几何', '解析几何'],
+  英语: ['阅读理解', '完形填空', '语法填空', '书面表达'],
+  物理: ['力学', '电磁学', '光学', '实验探究'],
+  化学: ['物质结构', '化学反应', '实验探究', '有机化学'],
+  生物: ['细胞代谢', '遗传规律', '稳态调节', '生态系统'],
+  历史: ['中国古代史', '中国近代史', '世界史', '史料分析'],
+  地理: ['自然地理', '人文地理', '区域地理', '地理实践'],
+  政治: ['经济生活', '政治生活', '文化生活', '哲学原理'],
+}
+
+const SECTION_TITLES: Record<string, string[]> = {
+  语文: ['一、现代文阅读', '二、古诗文默写', '三、写作'],
+  数学: ['一、单项选择题', '二、填空题', '三、解答题'],
+  英语: ['一、阅读理解', '二、语法填空', '三、书面表达'],
+  物理: ['一、单项选择题', '二、实验填空', '三、计算题'],
+  化学: ['一、单项选择题', '二、填空简答', '三、实验探究'],
+  生物: ['一、单项选择题', '二、填空简答', '三、综合应用'],
+  历史: ['一、单项选择题', '二、材料分析', '三、论述题'],
+  地理: ['一、单项选择题', '二、综合填空', '三、综合题'],
+  政治: ['一、单项选择题', '二、填空简答', '三、材料分析'],
+}
 const answerOf = (i: number) => 'ABCD'[i % 4]
 const optionTexts = (i: number) => [
   `${i + 1}`,
@@ -48,7 +73,7 @@ function choiceChoices(base: ReturnType<typeof region>) {
   }))
 }
 
-function makePages(): PaperCardPage[] {
+function makePages(subject = '数学'): PaperCardPage[] {
   const markers = [
     { id: 'top-left', x: 8, y: 8, size: 14 },
     { id: 'top-right', x: W - 22, y: 8, size: 14 },
@@ -59,7 +84,7 @@ function makePages(): PaperCardPage[] {
     {
       id: 'front-title',
       kind: 'title',
-      text: '高三数学周测答题卡',
+      text: `高三${subject}周测答题卡`,
       region: region(16, 14, 175, 22),
       style: { fontSize: 15, fontWeight: 'bold', textAlign: 'center' },
     },
@@ -103,7 +128,7 @@ function makePages(): PaperCardPage[] {
     {
       id: 'back-title',
       kind: 'title',
-      text: '高三数学周测答题卡（背面）',
+      text: `高三${subject}周测答题卡（背面）`,
       region: region(16, 14, 250, 22),
       style: { fontSize: 15, fontWeight: 'bold', textAlign: 'center' },
     },
@@ -162,8 +187,10 @@ function makeQuestion(
   r: ReturnType<typeof region>,
   score: number,
   opts?: { choices?: boolean; rows?: number },
+  subject = '数学',
 ): PaperQuestion {
-  const subject = subjectNames[(number - 1) % subjectNames.length]
+  const topics = SUBJECT_TOPICS[subject] ?? SUBJECT_TOPICS['数学']
+  const topic = topics[(number - 1) % topics.length]
   const isChoice = type === 'single' || type === 'multi'
   const options = isChoice
     ? ['A', 'B', 'C', 'D'].map((key, i) => ({ key, text: optionTexts(number)[i] }))
@@ -182,11 +209,11 @@ function makeQuestion(
     options,
     answer: isChoice ? answerOf(number) : `${number}. 参考答案（示例）`,
     analysis: isChoice
-      ? `本题考查${subject}基础概念，逐项判断即可。`
-      : `本题以${subject}为背景，先整理条件，再按步骤计算。`,
+      ? `本题考查${topic}基础概念，逐项判断即可。`
+      : `本题以${topic}为背景，先整理条件，再按步骤计算。`,
     score,
     difficulty: isChoice ? 2 : 4,
-    knowledgePoints: [subject],
+    knowledgePoints: [topic],
     media: [],
     answerCard: {
       page,
@@ -201,27 +228,28 @@ function makeQuestion(
   }
 }
 
-export function makeMockPaperBundle(): PaperBundle {
+export function makeMockPaperBundle(subject: PaperSubject = '数学'): PaperBundle {
+  const titles = SECTION_TITLES[subject] ?? SECTION_TITLES['数学']
   const sections: PaperSection[] = [
-    { id: 'sec-1', title: '一、单项选择题', type: 'single', instructions: '每小题 5 分，共 100 分' },
-    { id: 'sec-2', title: '二、填空题', type: 'blank', instructions: '每小题 4 分，共 20 分' },
-    { id: 'sec-3', title: '三、解答题', type: 'short', instructions: '每小题 5 分，共 30 分' },
+    { id: 'sec-1', title: titles[0], type: 'single', instructions: '每小题 5 分，共 100 分' },
+    { id: 'sec-2', title: titles[1], type: 'blank', instructions: '每小题 4 分，共 20 分' },
+    { id: 'sec-3', title: titles[2], type: 'short', instructions: '每小题 5 分，共 30 分' },
   ]
 
   const questions: PaperQuestion[] = []
   for (let i = 0; i < 20; i++) {
     questions.push(
-      makeQuestion(i + 1, 'single', 'sec-1', 'mark', 'front', choiceRegion(i), 5, { choices: true }),
+      makeQuestion(i + 1, 'single', 'sec-1', 'mark', 'front', choiceRegion(i), 5, { choices: true }, subject),
     )
   }
   for (let i = 0; i < 5; i++) {
     questions.push(
-      makeQuestion(i + 21, 'blank', 'sec-2', 'subjective', 'front', fillRegion(i), 4, { rows: 1 }),
+      makeQuestion(i + 21, 'blank', 'sec-2', 'subjective', 'front', fillRegion(i), 4, { rows: 1 }, subject),
     )
   }
   for (let i = 0; i < 6; i++) {
     questions.push(
-      makeQuestion(i + 26, 'short', 'sec-3', 'subjective', 'back', shortRegion(i), 5, { rows: 7 }),
+      makeQuestion(i + 26, 'short', 'sec-3', 'subjective', 'back', shortRegion(i), 5, { rows: 7 }, subject),
     )
   }
 
@@ -241,10 +269,10 @@ export function makeMockPaperBundle(): PaperBundle {
     schemaVersion: 1,
     meta: {
       id: 'paper_demo_001',
-      title: '高三数学周测',
-      subject: '数学',
+      title: `高三${subject}周测`,
+      subject,
       grade: '高三',
-      examName: '2026 秋季第一次周测',
+      examName: `2026 秋季${subject}第一次周测`,
       durationMinutes: 150,
       paperSize: 'A3',
       orientation: 'landscape',

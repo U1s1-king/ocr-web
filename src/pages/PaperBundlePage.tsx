@@ -1,17 +1,14 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { makeMockPaperBundle } from '../lib/paper/mock'
+import { makeMockPaperBundle, PAPER_SUBJECTS, type PaperSubject } from '../lib/paper/mock'
 import { saveActiveBundle } from '../lib/paper/active'
 import { bundleToPaperV2 } from '../lib/paper/backendV2'
 import {
   bundleTotalScore,
-  questionsForPage,
   questionsOfSection,
   sectionTotalScore,
   validatePaperBundle,
-  type PaperBlock,
   type PaperBundle,
-  type PaperCardPage,
   type PaperQuestion,
 } from '../lib/paper/types'
 
@@ -25,10 +22,10 @@ const VIEW_LABEL: Record<View, string> = {
 }
 
 /** 高考常见试卷纸型：A3 / 8K 为横版，A4 为纵版 */
-const PAPER_PRESETS: Record<PaperBundle['meta']['paperSize'], { w: number; h: number; label: string; orientation: 'portrait' | 'landscape' }> = {
-  A3: { w: 420, h: 297, label: 'A3 横版', orientation: 'landscape' },
-  '8K': { w: 370, h: 260, label: '8K 横版', orientation: 'landscape' },
-  A4: { w: 210, h: 297, label: 'A4 纵版', orientation: 'portrait' },
+const PAPER_PRESETS: Record<PaperBundle['meta']['paperSize'], { w: number; h: number; label: string; orientation: 'portrait' | 'landscape'; columns: number; gap: number; padX: number; padY: number; font: number }> = {
+  A3: { w: 420, h: 297, label: 'A3 横版', orientation: 'landscape', columns: 3, gap: 12, padX: 16, padY: 12, font: 10.5 },
+  '8K': { w: 370, h: 260, label: '8K 横版', orientation: 'landscape', columns: 3, gap: 8, padX: 12, padY: 9, font: 9.4 },
+  A4: { w: 210, h: 297, label: 'A4 纵版', orientation: 'portrait', columns: 1, gap: 0, padX: 14, padY: 12, font: 10.8 },
 }
 
 function loadBundle(): PaperBundle {
@@ -67,9 +64,10 @@ export default function PaperBundlePage() {
     }
   }
 
-  function goCardStudio() {
-    saveActiveBundle(bundle)
-    nav('/papers/studio?fromBundle=1')
+  function switchSubject(subject: PaperSubject) {
+    persist(makeMockPaperBundle(subject))
+    setPreviewSide('front')
+    setMessage(`已切换为${subject}示例试卷`)
   }
 
   function reset() {
@@ -185,6 +183,18 @@ export default function PaperBundlePage() {
             <span className="rounded-full bg-brand-50 px-2.5 py-1 text-[10px] font-bold text-brand-700">
               {bundle.meta.subject} · {bundle.meta.grade} · {bundle.meta.variant ?? 'A'} 卷
             </span>
+            <label className="flex items-center gap-1 text-[10px] font-bold text-ink-soft/55">
+              示例学科
+              <select
+                value={bundle.meta.subject}
+                onChange={(e) => switchSubject(e.target.value as PaperSubject)}
+                className="rounded-lg border border-brand-200 bg-white px-2 py-1 text-[10.5px] font-bold text-ink outline-none"
+              >
+                {PAPER_SUBJECTS.map((subject) => (
+                  <option key={subject} value={subject}>{subject}</option>
+                ))}
+              </select>
+            </label>
           </div>
           <p className="mt-1 text-[12px] text-ink-soft/65">
             {bundle.meta.examName} · {bundle.meta.durationMinutes} 分钟 · {bundle.meta.paperSize}{' '}
@@ -206,9 +216,6 @@ export default function PaperBundlePage() {
               }}
             />
           </label>
-          <button type="button" onClick={goCardStudio} className="rounded-xl border border-brand-300 bg-brand-50 px-3 py-2 text-[11.5px] font-bold text-brand-700">
-            去制作答题卡
-          </button>
           <button type="button" onClick={exportJson} className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-[11.5px] font-bold text-brand-700">
             导出 JSON
           </button>
@@ -237,7 +244,14 @@ export default function PaperBundlePage() {
             <button
               key={v}
               type="button"
-              onClick={() => setView(v)}
+              onClick={() => {
+                if (v === 'answerCard') {
+                  saveActiveBundle(bundle)
+                  nav('/papers/studio?fromBundle=1')
+                  return
+                }
+                setView(v)
+              }}
               className={`rounded-lg px-4 py-1.5 text-[11.5px] font-bold transition ${
                 view === v ? 'bg-white text-brand-800 shadow-sm' : 'text-ink-soft/65'
               }`}
@@ -301,7 +315,6 @@ export default function PaperBundlePage() {
 
       <div className="pbp-print-area">
         {view === 'paper' && <PaperView bundle={bundle} preset={paperPreset} side={previewSide} />}
-        {view === 'answerCard' && <AnswerCardView bundle={bundle} side={previewSide} />}
         {view === 'answerKey' && <AnswerKeyView bundle={bundle} />}
       </div>
 
@@ -369,13 +382,15 @@ function PaperSheet({
   pageNo: number
   totalPages: number
 }) {
-  const columns = preset.w > 300 ? 3 : 1
+  const columns = preset.columns
   return (
     <div
-      className="pbp-paper-sheet relative z-[2] mx-auto bg-white px-[16mm] py-[12mm] text-ink shadow-[0_8px_40px_rgba(20,20,20,.12)]"
+      className="pbp-paper-sheet relative z-[2] mx-auto bg-white text-ink shadow-[0_8px_40px_rgba(20,20,20,.12)]"
       style={{
         ['--paper-w' as string]: `${preset.w}mm`,
         ['--paper-h' as string]: `${preset.h}mm`,
+        padding: `${preset.padY}mm ${preset.padX}mm`,
+        ['--paper-font' as string]: `${preset.font}px`,
       }}
     >
       <div className="flex items-center justify-between border-b border-ink/30 pb-1.5 text-[9px] font-bold tracking-widest text-ink-soft/70">
@@ -421,7 +436,7 @@ function PaperSheet({
 
       <div
         className="pbp-paper-columns mt-3 text-[10.5px] leading-[1.55]"
-        style={{ columnCount: columns, columnGap: '12mm' }}
+        style={{ columnCount: columns, columnGap: `${preset.gap}mm` }}
       >
         {sections.map((section) => {
           const qs = questionsOfSection(bundle, section.id)
@@ -455,7 +470,7 @@ function PaperSheet({
 
 function PaperQuestionView({ q }: { q: PaperQuestion }) {
   return (
-    <article className="pbp-paper-question text-[10.5px] leading-[1.55]">
+    <article className="pbp-paper-question leading-[1.5]" style={{ fontSize: 'var(--paper-font)' }}>
       <div className="flex items-start gap-1.5">
         <span className="shrink-0 font-black">{q.number}.</span>
         <div className="min-w-0 flex-1">
@@ -477,150 +492,6 @@ function PaperQuestionView({ q }: { q: PaperQuestion }) {
 }
 
 /* ============================== 答题卡视图 ============================== */
-
-function AnswerCardView({ bundle, side }: { bundle: PaperBundle; side: 'front' | 'back' }) {
-  const pages = bundle.answerCard.pages
-  const page = pages.find((p) => p.side === side) ?? pages[0]
-  if (!page) return null
-  return (
-    <div className="flex flex-wrap items-start justify-center gap-5">
-      <CardPage key={page.id} bundle={bundle} page={page} />
-    </div>
-  )
-}
-
-function CardPage({ bundle, page }: { bundle: PaperBundle; page: PaperCardPage }) {
-  const qs = questionsForPage(bundle, page.side)
-  return (
-    <div className="flex w-full max-w-[520px] flex-col items-center gap-1.5">
-      <div
-        className="pbp-answer-card-sheet relative z-[2] w-full overflow-hidden border border-neutral-300 bg-white shadow-[0_8px_40px_rgba(20,20,20,.12)]"
-        style={{
-          aspectRatio: `${page.canvas.width} / ${page.canvas.height}`,
-          ['--pbp-card-w' as string]: `${page.canvas.width * 0.7}mm`,
-          ['--pbp-card-h' as string]: `${page.canvas.height * 0.7}mm`,
-        }}
-      >
-        {page.markers.map((m) => (
-          <span
-            key={m.id}
-            className="absolute border-2 border-neutral-800 bg-neutral-900"
-            style={{
-              left: pct(m.x, page.canvas.width),
-              top: pct(m.y, page.canvas.height),
-              width: pct(m.size, page.canvas.width),
-              height: pct(m.size, page.canvas.height),
-            }}
-          />
-        ))}
-        {page.blocks.map((b) => (
-          <BlockView key={b.id} block={b} page={page} />
-        ))}
-        {page.side === 'front' && bundle.answerCard.barcode && (
-          <BarcodePlaceholder bundle={bundle} page={page} />
-        )}
-        {qs.map((q) => (
-          <CardQuestionView key={q.id} q={q} page={page} />
-        ))}
-        <span
-          className="pbp-question-type absolute text-neutral-400"
-          style={{ left: '82%', top: '95%' }}
-        >
-          {page.side === 'front' ? '正面' : '背面'}
-        </span>
-      </div>
-      <p className="text-[10px] font-bold text-neutral-500">
-        {page.side === 'front' ? '正面' : '背面'} · {page.paperSize} · {qs.length} 个题区
-      </p>
-    </div>
-  )
-}
-
-function BlockView({ block, page }: { block: PaperBlock; page: PaperCardPage }) {
-  return (
-    <div
-      className="pbp-block-text absolute whitespace-pre-wrap text-neutral-900"
-      style={{
-        left: pct(block.region.x, page.canvas.width),
-        top: pct(block.region.y, page.canvas.height),
-        width: pct(block.region.width, page.canvas.width),
-        height: pct(block.region.height, page.canvas.height),
-        fontWeight: block.style?.fontWeight ?? 'normal',
-        textAlign: block.style?.textAlign ?? 'left',
-        lineHeight: 1.35,
-      }}
-    >
-      {block.text}
-    </div>
-  )
-}
-
-function BarcodePlaceholder({ bundle, page }: { bundle: PaperBundle; page: PaperCardPage }) {
-  const b = bundle.answerCard.barcode
-  if (!b || b.page !== page.side) return null
-  return (
-    <div
-      className="absolute flex items-center justify-center border border-dashed border-neutral-400 text-neutral-400"
-      style={{
-        left: pct(b.region.x, page.canvas.width),
-        top: pct(b.region.y, page.canvas.height),
-        width: pct(b.region.width, page.canvas.width),
-        height: pct(b.region.height, page.canvas.height),
-      }}
-    >
-      <span className="pbp-question-type">条形码区</span>
-    </div>
-  )
-}
-
-function CardQuestionView({ q, page }: { q: PaperQuestion; page: PaperCardPage }) {
-  const r = q.answerCard.region
-  const subjective = q.answerCard.type === 'subjective'
-  return (
-    <div
-      className="absolute"
-      style={{
-        left: pct(r.x, page.canvas.width),
-        top: pct(r.y, page.canvas.height),
-        width: pct(r.width, page.canvas.width),
-        height: pct(r.height, page.canvas.height),
-      }}
-    >
-      <div className="absolute inset-0 rounded-[2px] border border-neutral-300">
-        {subjective && (
-          <div
-            className="absolute inset-x-1 bottom-1 top-4"
-            style={{
-              backgroundImage:
-                'repeating-linear-gradient(to bottom, transparent 0, transparent 17px, #d7d7d7 17px, #d7d7d7 18px)',
-            }}
-          />
-        )}
-      </div>
-      <span className="pbp-question-no absolute -top-0.5 left-1 font-bold text-neutral-800">{q.number}</span>
-      <span className="pbp-question-type absolute -top-0.5 right-1 text-neutral-400">
-        {subjective ? '主观' : '选择'}
-      </span>
-      {!subjective &&
-        q.answerCard.choices?.map((c) => (
-          <span
-            key={c.value}
-            className="absolute grid place-items-center rounded-full border border-neutral-500 text-[8px] leading-none text-neutral-600"
-            style={{
-              left: pct(c.region.x, r.width),
-              top: pct(c.region.y, r.height),
-              width: pct(c.region.width, r.width),
-              height: pct(c.region.height, r.height),
-            }}
-          >
-            {c.value}
-          </span>
-        ))}
-    </div>
-  )
-}
-
-/* ============================== 答案视图 ============================== */
 
 function AnswerKeyView({ bundle }: { bundle: PaperBundle }) {
   return (
@@ -656,9 +527,5 @@ function AnswerKeyView({ bundle }: { bundle: PaperBundle }) {
       ))}
     </div>
   )
-}
-
-function pct(n: number, total: number): string {
-  return `${(n / total) * 100}%`
 }
 
