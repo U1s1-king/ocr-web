@@ -29,7 +29,7 @@ export function CardSheet({ doc, zoom = 1, className = '', children, flat }: Car
   const page = paperMm(doc.meta.paperSize, doc.meta.orientation)
   return (
     <div
-      className={className}
+      className={`card-sheet ${className}`.trim()}
       style={{
         width: mm(page.w),
         height: mm(page.h),

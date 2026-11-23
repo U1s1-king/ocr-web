@@ -6,6 +6,7 @@ import { ChevronRightIcon, DownloadIcon, TrashIcon } from '../components/icons'
 import { studentsApi } from '../m/api'
 import { parseTableFile } from '../lib/barcode/importData'
 import { BarcodeSvg } from '../lib/card/barcode'
+import { requestPrint } from '../lib/print'
 import type { CardBarcodeFormat } from '../lib/card/types'
 import {
   DEFAULT_PERSON,
@@ -269,7 +270,17 @@ export default function BarcodeStudioPage() {
   }
 
   function print() {
-    window.print()
+    requestPrint({
+      kind: 'barcode-label',
+      title: '条形码标签',
+      paperSize: printMode === 'roll' ? `${design.width}×${design.height}mm` : 'A4',
+      orientation: 'portrait',
+      widthMm: printMode === 'roll' ? design.width : 210,
+      heightMm: printMode === 'roll' ? design.height : 297,
+      pages: printMode === 'roll' ? printPeople.length : sheetPages.length,
+      doubleSided: false,
+      source: '/papers/barcode',
+    })
   }
 
   function renderField(field: BarcodeField, person: BarcodePerson, interactive: boolean) {

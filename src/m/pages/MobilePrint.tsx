@@ -7,6 +7,7 @@ import { backAsDoc } from '../../lib/card/back'
 import { CardSheet } from '../../lib/card/render'
 import { paperMm } from '../../lib/card/types'
 import { Btn, Card, Page } from '../ui'
+import { requestPrint } from '../../lib/print'
 
 const PX = 96 / 25.4
 
@@ -50,8 +51,8 @@ export default function MobilePrint() {
         </div>
       </Card>
       <div className="mt-3 grid grid-cols-2 gap-2">
-        <Btn variant="ghost" onClick={() => window.print()}>系统打印</Btn>
-        <Btn onClick={() => window.print()}>打印 / 存 PDF</Btn>
+        <Btn variant="ghost" onClick={() => requestPrint({ kind: 'answer-card', title: name || '答题卡', paperSize: current.meta.paperSize, orientation: current.meta.orientation, widthMm: dims.w, heightMm: dims.h, pages: back ? 2 : 1, doubleSided: Boolean(back), source: `/m/papers/${pid}/print` })}>系统打印</Btn>
+        <Btn onClick={() => requestPrint({ kind: 'answer-card', title: name || '答题卡', paperSize: current.meta.paperSize, orientation: current.meta.orientation, widthMm: dims.w, heightMm: dims.h, pages: back ? 2 : 1, doubleSided: Boolean(back), source: `/m/papers/${pid}/print` })}>打印 / 存 PDF</Btn>
       </div>
       <p className="mo-muted mt-2">打印时请选择 100% 缩放、无边距；手机上可先「打印/存 PDF」再发送。</p>
 

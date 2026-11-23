@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { makeMockPaperBundle, PAPER_SUBJECTS, type PaperSubject } from '../lib/paper/mock'
 import { saveActiveBundle } from '../lib/paper/active'
+import { requestPrint } from '../lib/print'
 import { bundleToPaperV2 } from '../lib/paper/backendV2'
 import {
   bundleTotalScore,
@@ -170,6 +171,7 @@ export default function PaperBundlePage() {
             break-after: page;
           }
           .pbp-answer-card-sheet:last-child { page-break-after: auto; break-after: auto; }
+          .pbp-side-inactive { display: block !important; }
         }
       `}</style>
 
@@ -225,8 +227,22 @@ export default function PaperBundlePage() {
           <button type="button" onClick={reset} className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-[11.5px] font-bold text-ink-soft">
             恢复示例
           </button>
-          <button type="button" onClick={() => window.print()} className="rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 px-4 py-2 text-[11.5px] font-bold text-white shadow-soft">
-            打印当前视图
+          <button
+            type="button"
+            onClick={() => requestPrint({
+              kind: 'paper-bundle',
+              title: bundle.meta.title,
+              paperSize: bundle.meta.paperSize,
+              orientation: bundle.meta.orientation,
+              widthMm: paperPreset.w,
+              heightMm: paperPreset.h,
+              pages: 2,
+              doubleSided: true,
+              source: '/papers/bundle',
+            })}
+            className="rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 px-4 py-2 text-[11.5px] font-bold text-white shadow-soft"
+          >
+            打印正反双面
           </button>
         </div>
       </div>
@@ -314,7 +330,16 @@ export default function PaperBundlePage() {
       )}
 
       <div className="pbp-print-area">
-        {view === 'paper' && <PaperView bundle={bundle} preset={paperPreset} side={previewSide} />}
+        {view === 'paper' && (
+          <>
+            <div className={previewSide === 'front' ? '' : 'pbp-side-inactive hidden'}>
+              <PaperView bundle={bundle} preset={paperPreset} side="front" />
+            </div>
+            <div className={previewSide === 'back' ? '' : 'pbp-side-inactive hidden'}>
+              <PaperView bundle={bundle} preset={paperPreset} side="back" />
+            </div>
+          </>
+        )}
         {view === 'answerKey' && <AnswerKeyView bundle={bundle} />}
       </div>
 

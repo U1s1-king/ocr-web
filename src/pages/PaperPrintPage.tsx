@@ -7,6 +7,7 @@ import { papersApi } from '../m/api'
 import { errorText } from '../api/client'
 import { resolveDoc, takeStashedDoc } from '../lib/card/store'
 import { validateCard } from '../lib/card/types'
+import { requestPrint } from '../lib/print'
 
 const PX_PER_MM = 96 / 25.4
 
@@ -64,10 +65,13 @@ export default function PaperPrintPage() {
         @media print {
           @page { size: ${dims.w}mm ${dims.h}mm; margin: 0; }
           body { background: #fff !important; }
+          body * { visibility: visible !important; }
           .pp-bar { display: none !important; }
+          .pointer-events-none.fixed { display: none !important; }
           .pp-wrap { padding: 0 !important; background: #fff !important; display: block !important; }
           .pp-zoom { width: ${dims.w}mm !important; height: ${dims.h}mm !important; }
           .pp-zoom > div { transform: none !important; }
+          .pp-zoom .card-sheet { transform: none !important; }
           .pp-page { box-shadow: none !important; }
           .pp-sheet { page-break-after: always; break-after: page; margin: 0 !important; }
           .pp-sheet:last-child { page-break-after: auto; break-after: auto; }
@@ -108,7 +112,17 @@ export default function PaperPrintPage() {
           )}
           <button
             type="button"
-            onClick={() => window.print()}
+            onClick={() => requestPrint({
+              kind: 'answer-card',
+              title: name || '答题卡',
+              paperSize: doc?.meta.paperSize ?? 'A4',
+              orientation: doc?.meta.orientation ?? 'portrait',
+              widthMm: dims.w,
+              heightMm: dims.h,
+              pages: pageDocs.length,
+              doubleSided: pageDocs.length > 1,
+              source: '/papers/print',
+            })}
             className="rounded-lg bg-neutral-900 px-4 py-1.5 text-[12px] font-bold text-white"
           >
             打印 / 存 PDF

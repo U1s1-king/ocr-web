@@ -4,6 +4,7 @@ import { useToast } from '../../components/Toast'
 import { studentsApi } from '../api'
 import { parseTableFile } from '../../lib/barcode/importData'
 import { BarcodeSvg } from '../../lib/card/barcode'
+import { requestPrint } from '../../lib/print'
 import { Btn, Card, Page } from '../ui'
 import { IcLayers, IcTrash, IcUpload, IcUsers } from '../icons'
 import {
@@ -251,7 +252,7 @@ export default function BarcodeStudio() {
 
       <div className="mt-3 grid grid-cols-2 gap-2">
         <Btn variant="ghost" onClick={() => nav('/m/papers')}>返回试卷</Btn>
-        <Btn onClick={() => window.print()} disabled={!printPeople.length}><IcLayers /> 打印标签</Btn>
+        <Btn onClick={() => requestPrint({ kind: 'barcode-label', title: '条形码标签', paperSize: `${design.width}×${design.height}mm`, orientation: 'portrait', widthMm: design.width, heightMm: design.height, pages: printPeople.length, doubleSided: false, source: '/m/papers' })} disabled={!printPeople.length}><IcLayers /> 打印标签</Btn>
       </div>
 
       <style>{`@media print { @page { size: ${design.width}mm ${design.height}mm; margin: 0; } body * { visibility: hidden !important; } .mo-barcode-print, .mo-barcode-print * { visibility: visible !important; } .mo-barcode-print { display: block !important; position: absolute; left: 0; top: 0; } }`}</style>

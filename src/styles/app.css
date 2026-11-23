@@ -1341,7 +1341,6 @@ header { z-index: 20; }
 /* 条形码标签打印 */
 .barcode-print-area { display: none; }
 @media print {
-  body * { visibility: hidden !important; }
   .barcode-print-area,
   .barcode-print-area * { visibility: visible !important; }
   .barcode-print-area {
@@ -1430,7 +1429,6 @@ header { z-index: 20; }
 }
 .bc-print-root { display: none; }
 @media print {
-  body * { visibility: hidden !important; }
   .bc-print-root, .bc-print-root * { visibility: visible !important; }
   .bc-print-root {
     display: block !important;

@@ -98,3 +98,14 @@ PUT /papers/{id} → 单页 ExamContent → toPaperV2() → 后端 v2
 - `schemaVersion: 2`
 - 题型 `mark | subjective`
 - 兼容 `other` 映射为 `subjective`
+
+## 7. 2026-11-23 文档更新
+
+- `POST /api/v1/papers/{id}/check` 请求体改为 `files: [{ page, fileId }]`，支持 1–50 页；响应每条带 `page`。
+- `POST /api/v1/exams/{id}/grade` 请求体改为 `submissions: [{ candidateNumber?, files: [{ page, fileId }] }]`。
+- 新增只读题库 `GET /api/v1/questions`，支持 `subject`、`type`、`offset`、`limit`。
+- 前端已补：
+  - `papersApi.checkPages()`
+  - `examsApi.gradeSubmissions()`
+  - `questionsApi.list()`
+- 现有单文件调用会按文件顺序映射到第 1…n 页，兼容旧的单页识别流程。

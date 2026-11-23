@@ -185,7 +185,13 @@ export interface GradeResponse {
   results: GradeItem[]
 }
 
+export interface CheckFile {
+  page: number
+  fileId: number
+}
+
 export interface CheckItem {
+  page?: number
   fileId: number
   success: boolean
   answers?: Record<string, string | null>
@@ -268,7 +274,12 @@ export const papersApi = {
     clearCache('papers')
     return r
   },
-  check: (id: number, fileIds: number[]) => json<CheckResponse>(`${P}/papers/${id}/check`, 'POST', { fileIds }),
+  check: (id: number, fileIds: number[]) =>
+    json<CheckResponse>(`${P}/papers/${id}/check`, 'POST', {
+      files: fileIds.map((fileId, i) => ({ page: i + 1, fileId })),
+    }),
+  checkPages: (id: number, files: CheckFile[]) =>
+    json<CheckResponse>(`${P}/papers/${id}/check`, 'POST', { files }),
 }
 
 export interface TemplateSummary { id: number; name: string }
@@ -328,11 +339,52 @@ export const examsApi = {
   },
   results: (id: number) => request<ExamResults>(`${P}/exams/${id}/results`),
   grade: async (id: number, fileIds: number[], candidateNumbers?: Record<string, string>) => {
-    const r = await json<GradeResponse>(`${P}/exams/${id}/grade`, 'POST', { fileIds, candidateNumbers })
+    const candidateNumber = fileIds.map((fileId) => candidateNumbers?.[String(fileId)]).find(Boolean)
+    const r = await json<GradeResponse>(`${P}/exams/${id}/grade`, 'POST', {
+      submissions: [
+        {
+          candidateNumber,
+          files: fileIds.map((fileId, i) => ({ page: i + 1, fileId })),
+        },
+      ],
+    })
     clearCache('exams')
     clearCache('results')
     return r
   },
+  gradeSubmissions: async (
+    id: number,
+    submissions: Array<{ candidateNumber?: string; files: CheckFile[] }>,
+  ) => {
+    const r = await json<GradeResponse>(`${P}/exams/${id}/grade`, 'POST', { submissions })
+    clearCache('exams')
+    clearCache('results')
+    return r
+  },
+}
+
+/* ================= 题库（只读） ================= */
+
+export interface BankQuestion {
+  id: number
+  subject: string
+  type: string
+  stem: string
+  options?: Array<{ key: string; text: string }>
+  answer?: string | null
+  analysis?: string | null
+}
+
+export interface QuestionList {
+  total: number
+  limit: number
+  offset: number
+  items: BankQuestion[]
+}
+
+export const questionsApi = {
+  list: (params: { subject?: string; type?: string; offset?: number; limit?: number } = {}) =>
+    request<QuestionList>(`${P}/questions${qs(params)}`),
 }
 
 /* ================= 人工复核 ================= */
