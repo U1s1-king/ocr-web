@@ -423,7 +423,7 @@ function layoutSubjective(
     const a = areas[c]
     let y = a.top
     const capacity = capacities[c]
-    const stretch = list.length && used[c] > 0 ? Math.min(1.5, capacity / Math.max(1, used[c])) : 1
+    const stretch = list.length && used[c] > 0 ? Math.min(3.8, capacity / Math.max(1, used[c])) : 1
     for (const gi of list) {
       const g = groups[gi]
       const need = needsAt(gi, a.w)
