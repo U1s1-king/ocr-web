@@ -150,7 +150,7 @@ export default function Capture() {
     try {
       if (examId > 0) {
         await examsApi.gradeSubmissions(examId, [
-          { files: pages.map((p, i) => ({ page: i + 1, fileId: p.fileId })) },
+          { files: pages.map((p) => ({ page: p.page, fileId: p.fileId })) },
         ])
         nav(`/m/exams/${examId}`, { replace: true })
         return
@@ -162,7 +162,7 @@ export default function Capture() {
       }
       const check = await papersApi.checkPages(
         paperId,
-        pages.map((p, i) => ({ page: i + 1, fileId: p.fileId })),
+        pages.map((p) => ({ page: p.page, fileId: p.fileId })),
       )
       setPct(100)
       setResult(check)
@@ -311,10 +311,23 @@ export default function Capture() {
               {examId > 0 ? '按顺序对应答题卡第 1、2 页，提交后进入考试批改。' : '按顺序对应答题卡第 1、2 页。'}
             </p>
             <div className="mt-3 flex gap-2 overflow-x-auto">
-              {pages.map((p, i) => (
+              {pages.map((p) => (
                 <div key={p.fileId} className="w-[74px] shrink-0 overflow-hidden rounded-xl border border-brand-100 bg-white">
-                  <img src={p.preview} alt={`第 ${i + 1} 页`} className="h-[92px] w-full object-cover" />
-                  <p className="py-1 text-center text-[10px] font-bold text-ink-soft">第 {i + 1} 页</p>
+                  <img src={p.preview} alt={`第 ${p.page} 页`} className="h-[92px] w-full object-cover" />
+                  <label className="flex items-center justify-center gap-0.5 py-1 text-[10px] font-bold text-ink-soft">
+                    第
+                    <input
+                      type="number"
+                      min={1}
+                      value={p.page}
+                      onChange={(e) => {
+                        const page = Math.max(1, Number(e.target.value) || 1)
+                        setPages((list) => list.map((x) => (x.fileId === p.fileId ? { ...x, page } : x)))
+                      }}
+                      className="w-8 rounded border border-brand-200 px-0.5 text-center text-[10px] outline-none"
+                    />
+                    页
+                  </label>
                 </div>
               ))}
             </div>
