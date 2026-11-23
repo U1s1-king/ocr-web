@@ -84,6 +84,13 @@ export default function ResultDetailPage() {
             >
               看试卷
             </button>
+            <button
+              type="button"
+              className="ml-2 flex-none text-[10.5px] font-extrabold text-brand-700"
+              onClick={() => nav(`/m/papers/${load.data.paperId}/print`)}
+            >
+              打印预览
+            </button>
           </Card>
 
           <Card className="mt-3 !p-3">
