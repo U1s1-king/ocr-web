@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../../components/Toast'
 import { studentsApi } from '../api'
+import { readFileText } from '../../lib/textEncoding'
 import { BarcodeSvg } from '../../lib/card/barcode'
 import { Btn, Card, Page } from '../ui'
 import { IcLayers, IcTrash, IcUpload, IcUsers } from '../icons'
@@ -122,7 +123,7 @@ export default function BarcodeStudio() {
 
   function importFile(file?: File | null) {
     if (!file) return
-    file.text().then((text) => {
+    readFileText(file).then((text) => {
       let list: Record<string, string>[] = []
       let headers: string[] = []
       if (file.name.endsWith('.json')) {

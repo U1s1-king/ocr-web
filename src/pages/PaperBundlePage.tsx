@@ -150,7 +150,10 @@ export default function PaperBundlePage() {
             box-shadow: none !important;
             margin: 0 !important;
             border: 0 !important;
+            page-break-after: always;
+            break-after: page;
           }
+          .pbp-paper-sheet:last-child { page-break-after: auto; break-after: auto; }
           .pbp-answer-card-sheet {
             --pbp-card-scale: 1;
             width: 210mm !important;
@@ -293,9 +296,49 @@ function Stat({ label, value }: { label: string; value: string }) {
 type PaperPreset = (typeof PAPER_PRESETS)[PaperBundle['meta']['paperSize']]
 
 function PaperView({ bundle, preset }: { bundle: PaperBundle; preset: PaperPreset }) {
-  const width = preset.w
-  const columns = width > 300 ? 2 : 1
-  const totalPages = Math.max(1, Math.ceil(bundle.questions.length / 38))
+  const pages = useMemo(() => {
+    const sides = bundle.answerCard.pages.length ? bundle.answerCard.pages.map((p) => p.side) : (['front', 'back'] as const)
+    const out = sides
+      .map((side) => ({
+        side,
+        sections: bundle.sections.filter((sec) =>
+          questionsOfSection(bundle, sec.id).some((q) => q.answerCard.page === side),
+        ),
+      }))
+      .filter((p) => p.sections.length > 0)
+    return out.length ? out : [{ side: 'front' as const, sections: bundle.sections }]
+  }, [bundle])
+
+  return (
+    <div className="flex flex-col items-center gap-6">
+      {pages.map((page, i) => (
+        <PaperSheet
+          key={page.side}
+          bundle={bundle}
+          preset={preset}
+          sections={page.sections}
+          pageNo={i + 1}
+          totalPages={pages.length}
+        />
+      ))}
+    </div>
+  )
+}
+
+function PaperSheet({
+  bundle,
+  preset,
+  sections,
+  pageNo,
+  totalPages,
+}: {
+  bundle: PaperBundle
+  preset: PaperPreset
+  sections: PaperBundle['sections']
+  pageNo: number
+  totalPages: number
+}) {
+  const columns = preset.w > 300 ? 2 : 1
   return (
     <div
       className="pbp-paper-sheet relative z-[2] mx-auto bg-white px-[16mm] py-[12mm] text-ink shadow-[0_8px_40px_rgba(20,20,20,.12)]"
@@ -307,7 +350,7 @@ function PaperView({ bundle, preset }: { bundle: PaperBundle; preset: PaperPrese
       <div className="flex items-center justify-between border-b border-ink/30 pb-1.5 text-[9px] font-bold tracking-widest text-ink-soft/70">
         <span>绝密★启用前</span>
         <span>
-          {preset.label} · {bundle.meta.subject}试卷 · {bundle.meta.variant ?? 'A'} 卷
+          {preset.label} · {bundle.meta.subject}试卷 · {bundle.meta.variant ?? 'A'} 卷 · 第 {pageNo} 页 / 共 {totalPages} 页
         </span>
       </div>
 
@@ -335,19 +378,21 @@ function PaperView({ bundle, preset }: { bundle: PaperBundle; preset: PaperPrese
         <span className="text-ink-soft/50">密封线内不要答题</span>
       </div>
 
-      <div className="mt-3 border border-ink/25 px-3 py-2 text-[9px] leading-[1.65] text-ink-soft/80">
-        <p className="font-bold text-ink">注意事项：</p>
-        <p>1. 答题前，考生务必将姓名、准考证号、考场号、座位号填写清楚。</p>
-        <p>2. 选择题使用 2B 铅笔填涂；非选择题使用 0.5 毫米黑色签字笔作答。</p>
-        <p>3. 请按题号在答题卡指定区域内作答，超出答题区域书写的答案无效。</p>
-        <p>4. 保持答题卡清洁，不要折叠、不要弄破。</p>
-      </div>
+      {pageNo === 1 && (
+        <div className="mt-3 border border-ink/25 px-3 py-2 text-[9px] leading-[1.65] text-ink-soft/80">
+          <p className="font-bold text-ink">注意事项：</p>
+          <p>1. 答题前，考生务必将姓名、准考证号、考场号、座位号填写清楚。</p>
+          <p>2. 选择题使用 2B 铅笔填涂；非选择题使用 0.5 毫米黑色签字笔作答。</p>
+          <p>3. 请按题号在答题卡指定区域内作答，超出答题区域书写的答案无效。</p>
+          <p>4. 保持答题卡清洁，不要折叠、不要弄破。</p>
+        </div>
+      )}
 
       <div
         className="pbp-paper-columns mt-4 text-[11px] leading-[1.7]"
         style={{ columnCount: columns, columnGap: '12mm' }}
       >
-        {bundle.sections.map((section) => {
+        {sections.map((section) => {
           const qs = questionsOfSection(bundle, section.id)
           return (
             <section key={section.id} className="mb-5">
@@ -370,7 +415,7 @@ function PaperView({ bundle, preset }: { bundle: PaperBundle; preset: PaperPrese
       <footer className="mt-4 flex items-center justify-between border-t border-ink/20 pt-1.5 text-[9px] text-ink-soft/60">
         <span>密封线内不要答题</span>
         <span>
-          {bundle.meta.subject}试卷 · {preset.label} · 第 1 页 / 共 {totalPages} 页
+          {bundle.meta.subject}试卷 · {preset.label} · 第 {pageNo} 页 / 共 {totalPages} 页
         </span>
       </footer>
     </div>

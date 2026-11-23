@@ -355,29 +355,42 @@ function layoutSubjective(
   top: number,
   bottom: number,
   area?: { x0: number; w: number; cols?: number },
+  explicitAreas?: { x0: number; w: number; top: number; bottom: number }[],
 ): number {
   const { ctx } = b
   if (!groups.length) return top
-  const cols = area?.cols ?? ctx.subjCols
-  const colGap = 5
-  const colW = ((area?.w ?? ctx.contentW) - colGap * (cols - 1)) / cols
-  const colX = (i: number) => (area?.x0 ?? ctx.contentX0) + i * (colW + colGap)
-  const capacity = Math.max(20, bottom - top)
-  const needs = groups.map((g) => subjectiveNeeds(g, colW))
 
-  // 逐级压缩，找到能装下的最小压缩比
+  const areas = explicitAreas?.length
+    ? explicitAreas
+    : (() => {
+        const cols = area?.cols ?? ctx.subjCols
+        const colGap = 5
+        const colW = ((area?.w ?? ctx.contentW) - colGap * (cols - 1)) / cols
+        return Array.from({ length: cols }, (_, i) => ({
+          x0: (area?.x0 ?? ctx.contentX0) + i * (colW + colGap),
+          w: colW,
+          top,
+          bottom,
+        }))
+      })()
+
+  const capacities = areas.map((a) => Math.max(20, a.bottom - a.top))
+  const needsAt = (gi: number, colW: number) => subjectiveNeeds(groups[gi], colW)
+
   let placements: number[][] | null = null
   let used: number[] = []
   let scale = 1
-  for (let attempt = 0; attempt <= 10; attempt += 1) {
+  for (let attempt = 0; attempt <= 12; attempt += 1) {
     scale = 1 - attempt * 0.05
-    const trial: number[][] = Array.from({ length: cols }, () => [])
-    const trialUsed = new Array<number>(cols).fill(0)
+    const trial: number[][] = Array.from({ length: areas.length }, () => [])
+    const trialUsed = new Array<number>(areas.length).fill(0)
     let ok = true
     groups.forEach((_, gi) => {
-      const h = Math.max(13, needs[gi].h * scale)
-      for (let c = 0; c < cols; c += 1) {
-        if (trialUsed[c] + h <= capacity + 0.4) {
+      // 先尝试窄列/剩余高度少的列，避免最后只剩一条窄列
+      const order = areas.map((_, i) => i).sort((a, b) => trialUsed[a] - trialUsed[b])
+      for (const c of order) {
+        const h = Math.max(13, needsAt(gi, areas[c].w).h * scale)
+        if (trialUsed[c] + h <= capacities[c] + 0.4) {
           trial[c].push(gi)
           trialUsed[c] += h
           return
@@ -392,11 +405,10 @@ function layoutSubjective(
     }
   }
   if (!placements) {
-    // 极端题量：均分进各列并标记提示
-    placements = Array.from({ length: cols }, (_, c) => groups.map((_, gi) => gi).filter((gi) => gi % cols === c))
-    used = new Array<number>(cols).fill(capacity)
+    placements = Array.from({ length: areas.length }, (_, c) => groups.map((_, gi) => gi).filter((gi) => gi % areas.length === c))
+    used = capacities.map(() => 0)
     scale = 0.5
-    b.warnings.push('主观题题量超出单页容量，已按最大压缩排版，建议减少题量或改用更大纸型')
+    b.warnings.push('主观题题量超出当前版面容量，已按最大压缩排版，建议减少题量或改用更大纸型')
   } else if (scale < 0.9) {
     b.warnings.push('题量偏多，已自动压缩主观题行距以放进一张卡')
   }
@@ -406,19 +418,20 @@ function layoutSubjective(
   let maxY = top
 
   placements.forEach((list, c) => {
-    const x = colX(c)
-    let y = top
+    const a = areas[c]
+    let y = a.top
+    const capacity = capacities[c]
     const stretch = list.length && used[c] > 0 ? Math.min(1.5, capacity / Math.max(1, used[c])) : 1
     for (const gi of list) {
       const g = groups[gi]
-      const need = needs[gi]
-      let h = Math.min(capacity - (y - top), Math.max(13, need.h * scale) * stretch)
+      const need = needsAt(gi, a.w)
+      let h = Math.min(a.bottom - y, Math.max(13, need.h * scale) * stretch)
       const showHeader = isSectionTitle(g.title)
 
       if (showHeader) {
         b.addBlock(
           g.title,
-          { x, y, w: colW, h: SECTION_TITLE_MM },
+          { x: a.x0, y, w: a.w, h: SECTION_TITLE_MM },
           { fontSize: 3.5, fontWeight: 'bold', textAlign: 'left', lineHeight: 1.1 },
           { kind: 'section' },
         )
@@ -431,7 +444,7 @@ function layoutSubjective(
 
       if (g.style === 'grid') {
         const gridCols = need.gridCols ?? 24
-        const cell = (colW - 4) / gridCols
+        const cell = (a.w - 4) / gridCols
         const rows = Math.max(6, Math.floor((itemH - 3) / cell))
         const boxH = Math.min(itemH, rows * cell + 2)
         if (boxH < 8) break
@@ -441,20 +454,20 @@ function layoutSubjective(
           type: 'subjective',
           score: items[0]?.score ?? 10,
           region: {
-            x: mm2u(x),
+            x: mm2u(a.x0),
             y: mm2u(y),
-            width: mm2u(colW),
+            width: mm2u(a.w),
             height: mm2u(boxH),
           },
         }
         b.addQuestion(q, { style: 'grid', rows, gridCols, label: showHeader ? undefined : g.title })
         number += 1
-        y = Math.min(top + capacity, y + boxH + 1.2)
+        y = Math.min(a.bottom, y + boxH + 1.2)
         continue
       }
 
       for (const it of items) {
-        const remain = Math.max(0, capacity - (y - top))
+        const remain = Math.max(0, a.bottom - y)
         const boxH = Math.max(10, Math.min(itemH, remain))
         if (boxH < 8) break
         const q: Question = {
@@ -463,9 +476,9 @@ function layoutSubjective(
           type: 'subjective',
           score: Math.max(0.5, it.score),
           region: {
-            x: mm2u(x),
+            x: mm2u(a.x0),
             y: mm2u(y),
-            width: mm2u(colW),
+            width: mm2u(a.w),
             height: mm2u(boxH),
           },
         }
@@ -476,13 +489,13 @@ function layoutSubjective(
           label: showHeader ? undefined : g.title,
         })
         number += 1
-        y = Math.min(top + capacity, y + boxH + 1.2)
+        y = Math.min(a.bottom, y + boxH + 1.2)
       }
     }
     maxY = Math.max(maxY, y)
   })
 
-  return Math.min(maxY, bottom)
+  return Math.min(maxY, Math.max(...areas.map((a) => a.bottom)))
 }
 
 /** 生成一次（不含纸型回退） */
@@ -529,10 +542,19 @@ function buildOnce(spec: CardSpec, rowH: number, fontSize: number, subjCols?: nu
     const leftW = Math.min(105, Math.max(82, ctx.contentW * 0.27))
     const gap = 5
     const left = { x0: ctx.contentX0, w: leftW, maxPerRow: 2 }
-    const right = { x0: ctx.contentX0 + leftW + gap, w: ctx.contentX1 - (ctx.contentX0 + leftW + gap), cols: 3 }
     const top = afterHeader + 1
-    layoutObjective(b, spec.objectiveGroups, top, rowH, fontSize, left)
-    const end = layoutSubjective(b, spec.subjectiveGroups, top, subjectiveBottom, right)
+    const objectiveEnd = layoutObjective(b, spec.objectiveGroups, top, rowH, fontSize, left)
+    const rightX = ctx.contentX0 + leftW + gap
+    const rightW = ctx.contentX1 - rightX
+    const colGap = 5
+    const rightColW = (rightW - colGap * 2) / 3
+    const areas = [
+      { x0: ctx.contentX0, w: leftW, top: objectiveEnd + 1, bottom: subjectiveBottom },
+      { x0: rightX, w: rightColW, top, bottom: subjectiveBottom },
+      { x0: rightX + rightColW + colGap, w: rightColW, top, bottom: subjectiveBottom },
+      { x0: rightX + (rightColW + colGap) * 2, w: rightColW, top, bottom: subjectiveBottom },
+    ]
+    const end = layoutSubjective(b, spec.subjectiveGroups, top, subjectiveBottom, undefined, areas)
     overflow = end > subjectiveBottom + 0.5 || b.tooCompressed
   } else {
     const afterObjective = layoutObjective(b, spec.objectiveGroups, afterHeader, rowH, fontSize)

@@ -4,6 +4,7 @@ import { PageHeader } from '../components/PageHeader'
 import { Badge, Button, Card, Field, inputCls } from '../components/ui'
 import { ChevronRightIcon, DownloadIcon, TrashIcon } from '../components/icons'
 import { studentsApi } from '../m/api'
+import { readFileText, stripBom } from '../lib/textEncoding'
 import { BarcodeSvg } from '../lib/card/barcode'
 import type { CardBarcodeFormat } from '../lib/card/types'
 import {
@@ -88,7 +89,7 @@ function parseCsv(text: string): { headers: string[]; rows: Record<string, strin
   }
   const clean = lines.filter((r) => r.some((x) => x.trim() !== ''))
   if (!clean.length) return { headers: [], rows: [] }
-  const headers = clean[0].map((h) => h.trim())
+  const headers = clean[0].map((h) => stripBom(h).trim())
   return {
     headers,
     rows: clean.slice(1).map((r) => Object.fromEntries(headers.map((h, i) => [h, (r[i] ?? '').trim()]))),
@@ -264,8 +265,7 @@ export default function BarcodeStudioPage() {
       setImportError('Excel 请先在 Excel 里「另存为 CSV」，再导入；或直接下载我们的 CSV 模板。')
       return
     }
-    file
-      .text()
+    readFileText(file)
       .then((text) => {
         let headers: string[] = []
         let rows: Record<string, string>[] = []

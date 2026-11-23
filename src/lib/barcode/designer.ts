@@ -161,7 +161,7 @@ const aliases: Record<keyof Omit<BarcodePerson, 'id'>, string[]> = {
 /** 自动识别表头：返回字段 -> 实际 key */
 export function detectMapping(headers: string[]): Partial<Record<keyof Omit<BarcodePerson, 'id'>, string>> {
   const out: Partial<Record<keyof Omit<BarcodePerson, 'id'>, string>> = {}
-  const norm = (s: string) => s.trim().toLowerCase().replace(/[\s_\-（）()]/g, '')
+  const norm = (s: string) => s.replace(/^﻿/, '').trim().toLowerCase().replace(/[\s_\-（）()]/g, '')
   for (const [field, list] of Object.entries(aliases) as Array<[keyof typeof aliases, string[]]>) {
     const found = headers.find((h) => list.some((a) => norm(h) === norm(a) || norm(h).includes(norm(a))))
     if (found) out[field] = found
