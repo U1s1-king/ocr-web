@@ -211,3 +211,46 @@ export function bundleToPaperV2(bundle: PaperBundle): PaperV2 {
     paper: { pages: paperPages },
   }
 }
+
+/* ========================================================================== */
+/* CardDoc → 后端 v2（模板/答题卡双面导出）                                     */
+/* ========================================================================== */
+
+import { backAsDoc } from '../card/back'
+import type { CardDoc } from '../card/types'
+
+function pageFromCardDoc(doc: CardDoc, page: number): PaperV2Page {
+  return {
+    page,
+    unit: 'canvas',
+    canvas: doc.content.canvas,
+    markers: doc.content.markers as Marker[],
+    blocks: (doc.content.blocks ?? []) as Block[],
+    questions: (doc.content.questions ?? []).map((q) => ({
+      id: q.id,
+      displayNumber: q.displayNumber,
+      type: q.type,
+      score: Number(q.score) || 0,
+      region: q.region,
+      ...(q.type === 'mark' ? { choices: q.choices ?? [] } : {}),
+    })) as PaperV2Question[],
+    ...(doc.content.barcode ? { barcode: doc.content.barcode as Barcode } : {}),
+  }
+}
+
+/** 把一张双面答题卡（正面 + doc.back）导出为后端 v2 模板结构 */
+export function cardDocToPaperV2(doc: CardDoc): PaperV2 {
+  const pages: PaperV2Page[] = [pageFromCardDoc(doc, 1)]
+  if (doc.back) pages.push(pageFromCardDoc(backAsDoc(doc), 2))
+  const answerKey = Object.fromEntries(
+    (doc.content.questions ?? [])
+      .filter((q) => q.type === 'mark')
+      .map((q) => [q.id, doc.content.answerKey?.[q.id] ?? ''])
+      .filter(([, value]) => Boolean(value)),
+  )
+  return {
+    schemaVersion: 2,
+    answerCard: { answerKey, pages },
+    paper: { pages: [] },
+  }
+}

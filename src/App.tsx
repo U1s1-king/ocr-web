@@ -13,6 +13,7 @@ const CardStudioPage = lazy(() => import('./pages/CardStudioPage'))
 const DslStudioPage = lazy(() => import('./pages/DslStudioPage'))
 const CardEditorPage = lazy(() => import('./pages/CardEditorPage'))
 const QuestionBankPage = lazy(() => import('./pages/QuestionBankPage'))
+const TemplateSyncPage = lazy(() => import('./pages/TemplateSyncPage'))
 import { Splash } from './components/Splash'
 import { ServerDownDialog } from './components/ServerDownDialog'
 import { ToastProvider } from './components/Toast'
@@ -111,6 +112,7 @@ export default function App() {
             <Route path="papers/barcode" element={<BarcodeStudioPage />} />
             <Route path="papers/local/edit" element={<CardEditorPage />} />
             <Route path="questions" element={<QuestionBankPage />} />
+            <Route path="papers/template-sync" element={<TemplateSyncPage />} />
             <Route path="papers/:id/edit" element={<CardEditorPage />} />
 
             <Route path="students" element={<StudentsPage />} />

@@ -52,6 +52,7 @@ export const MODULES: ModuleDef[] = [
       { label: '文本出卡 DSL', to: '/papers/dsl', m: '/m/papers', keys: ['文本', 'DSL', '快速出卡', '一行一题'] },
       { label: '模板工坊', to: '/papers/templates', m: '/m/papers', api: 'GET /templates', keys: ['模板', '出卷', '自动'] },
       { label: '题库浏览', to: '/questions', api: 'GET /questions', keys: ['题库', '题目', '学科', '题型'] },
+      { label: '模板同步', to: '/papers/template-sync', api: 'POST /templates', keys: ['模板', '同步', '官方'] },
       { label: '版式精调', to: '/papers/:id/edit', m: '/m/papers/:id/edit', api: 'PUT /papers/{id}', keys: ['编辑', '版式', '画布', '拖动', '定位'] },
       { label: '答案键', to: '/papers/:id/edit', m: '/m/papers/:id/edit', api: 'PUT /papers/{id}/answers', keys: ['答案', '标准答案'] },
       { label: '上传前校验', to: '/papers/:id/edit', api: 'POST /papers/{id}/check', keys: ['校验', '检查'] },
