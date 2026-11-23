@@ -4,7 +4,6 @@
  */
 import {
   GAOKAO_SUBJECTS,
-  VOCATIONAL_SUBJECTS,
   type SectionSpec,
   type SubjectMeta,
 } from '../paperTemplates'
@@ -197,56 +196,18 @@ function pushTemplates(
 
 /* ---------------- 组装 ---------------- */
 
-function genericTemplates(): CardTemplate[] {
-  const base = (size: PaperSize, name: string, id: string): CardTemplate => ({
-    id,
-    name,
-    system: 'generic',
-    systemLabel: '通用',
-    subject: '通用',
-    size,
-    variant: VARIANT_LABEL.blank,
-    hint: '空白答题卡骨架：定位块 + 表头 + 条形码，题量可自由添加',
-    fullScore: 100,
-    spec: {
-      name,
-      title: '考试名称（可编辑）',
-      subtitle: '通 用 答 题 卡',
-      system: '通用',
-      subject: '通用',
-      paperSize: size,
-      orientation: size === 'A3' ? 'landscape' : 'portrait',
-      objectiveGroups: [],
-      subjectiveGroups: [],
-      studentFields: ['姓名', '准考证号', '班级', '座位号'],
-      notes:
-        '1. 本卡为空白模板，可在「精调」里添加选择题与主观题。\n' +
-        '2. 选择题用 2B 铅笔填涂；主观题用 0.5mm 黑色签字笔作答。\n' +
-        '3. 答题前请先核对定位块是否完整印刷。',
-      showBarcode: true,
-      showLegend: true,
-      showNotice: true,
-      showStudent: true,
-      footer: '超出矩形边框限定区域的答案无效',
-    },
-  })
-  return [base('A4', '通用-A4-空白答题卡', '通用-generic-A4-blank'), base('A3', '通用-A3-空白答题卡', '通用-generic-A3-blank')]
-}
-
 function buildAll(): CardTemplate[] {
   const out: CardTemplate[] = []
+  // 只保留 9 科真实高考答题卡（A3/A4）+ 2 张空白编辑骨架。
+  // 职教/中考示例模板全部移除，避免与正式高考版式混在一起。
   pushTemplates(out, GAOKAO_SUBJECTS, 'gaokao', '普通高等学校招生全国统一考试')
-  pushTemplates(out, VOCATIONAL_SUBJECTS, 'vocational', '职业技术教育高考（对口升学）')
-  // 中考：题量比高考略少、作答区略窄，标题单独一套
-  pushTemplates(out, GAOKAO_SUBJECTS, 'zhongkao', '初中学业水平考试', 0.82, 0.78)
-  out.push(...genericTemplates())
   return out
 }
 
 export const CARD_TEMPLATES: CardTemplate[] = buildAll()
 
 export const CATALOG_SUBJECTS = ['全部', ...Array.from(new Set(CARD_TEMPLATES.map((t) => t.subject)))]
-export const CATALOG_SYSTEMS = ['全部', '普高', '职教', '中考', '通用']
+export const CATALOG_SYSTEMS = ['全部', '普高']
 export const CATALOG_SIZES = ['全部', 'A4', 'A3']
 
 export function templateById(id: string): CardTemplate | null {

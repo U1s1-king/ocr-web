@@ -663,13 +663,22 @@ function splitSubjectPages(front: CardDoc): { doc: CardDoc } {
   const subjective = questions.filter((q) => q.type === 'subjective').sort((a, b) => a.region.y - b.region.y)
   const objective = questions.filter((q) => q.type !== 'subjective')
   const subject = `${front.meta.subject ?? ''} ${front.meta.templateName ?? ''}`
-  const science = /数学|math|物理|physics|化学|chemistry|生物|biology/.test(subject)
+  const language = /语文|chinese|英语|english|外语/.test(subject)
 
-  // 语文作文、英语写作、文科材料题保留科目自带的整页背面；
-  // 只有数学/理科需要把大题均匀分到正反两面。
-  if (!science) {
-    const back = withHeaderFromFront(front, createSubjectBack(front))
-    return { doc: finalizeTwoPage(front, back) }
+  // 语文/英语的作文/写作区固定在背面，正面只保留阅读、语用、语法填空等
+  if (language) {
+    let kept = questions
+    if (/语文|chinese/.test(subject)) {
+      kept = questions.filter((q) => !(q.type === 'subjective' && front.qmeta[q.id]?.style === 'grid'))
+    } else {
+      const subs = subjective.filter((q) => q.type === 'subjective')
+      const keepSubs = subs.slice(0, Math.max(0, subs.length - 2))
+      const keepIds = new Set(keepSubs.map((q) => q.id))
+      kept = [...objective, ...subs.filter((q) => keepIds.has(q.id))]
+    }
+    const languageFront = { ...front, content: { ...front.content, questions: kept } }
+    const back = withHeaderFromFront(languageFront, createSubjectBack(languageFront))
+    return { doc: finalizeTwoPage(languageFront, back) }
   }
 
   // 少于 4 道主观题不拆，保持现有背面科目版式

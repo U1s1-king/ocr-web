@@ -210,8 +210,8 @@ export function docFromRemoteTemplate(
     doc.meta.templateName = name
     return doc
   }
-  const generic = CARD_TEMPLATES.find((t) => t.subject === '通用' && t.size === size) ?? CARD_TEMPLATES[0]
-  return cloneDoc(generateCard(generic.spec).doc)
+  const fallback = CARD_TEMPLATES.find((t) => t.size === size) ?? CARD_TEMPLATES[0]
+  return cloneDoc(generateCard(fallback.spec).doc)
 }
 
 /* ---------------- 无后端时的本地跳转 ---------------- */
