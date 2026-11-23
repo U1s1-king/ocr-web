@@ -13,7 +13,8 @@ import {
 import { scanFromCheckItem } from '../../lib/scanRecord'
 import { EXPORT_FORMATS, downloadScans } from '../../lib/export'
 
-type Step = 'pick' | 'crop' | 'scan' | 'done'
+type Step = 'pick' | 'crop' | 'scan' | 'ready' | 'done'
+type UploadedPage = { fileId: number; preview: string; page: number }
 type Box = { x: number; y: number; w: number; h: number }
 type DragMode = 'move' | 'nw' | 'ne' | 'sw' | 'se'
 
@@ -36,6 +37,8 @@ export default function Capture() {
   const [paperName, setPaperName] = useState('高一数学第一次月考答题卡')
   const [pickOpen, setPickOpen] = useState(false)
   const [result, setResult] = useState<CheckResponse | null>(null)
+  const [pages, setPages] = useState<UploadedPage[]>([])
+  const [submitting, setSubmitting] = useState(false)
   const [saved, setSaved] = useState<OfflineScan[]>([])
   const [err, setErr] = useState('')
   const drag = useRef<{ mode: DragMode; sx: number; sy: number; box: Box; w: number; h: number } | null>(null)
@@ -125,26 +128,49 @@ export default function Capture() {
       const file = new File([cropped.blob], fileName.replace(/\.\w+$/, '') + '_crop.jpg', {
         type: 'image/jpeg',
       })
-      const up = await filesApi.upload(file, (p) => setPct(Math.max(6, Math.round(p * 0.55))))
-      setPct(66)
+      const up = await filesApi.upload(file, (p) => setPct(Math.max(6, Math.round(p * 0.85))))
+      setPct(100)
+      setPages((list) => [...list, { fileId: up.fileId, preview: src, page: list.length + 1 }])
+      setSrc('')
+      setFileName('')
+      setStep('ready')
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      setErr(msg)
+      setStep('ready')
+    }
+  }
+
+  async function submitPages() {
+    if (!pages.length) return
+    setSubmitting(true)
+    setErr('')
+    setStep('scan')
+    setPct(12)
+    try {
       if (examId > 0) {
-        await examsApi.grade(examId, [up.fileId])
-        setPct(100)
+        await examsApi.gradeSubmissions(examId, [
+          { files: pages.map((p, i) => ({ page: i + 1, fileId: p.fileId })) },
+        ])
         nav(`/m/exams/${examId}`, { replace: true })
         return
       }
-      const check = await papersApi.check(paperId ?? 1, [up.fileId])
+      const check = await papersApi.checkPages(
+        paperId ?? 1,
+        pages.map((p, i) => ({ page: i + 1, fileId: p.fileId })),
+      )
       setPct(100)
       setResult(check)
       setSaved(await persistScans(check, paperName))
       setStep('done')
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e)
-      setErr(msg)
-      setResult(null)
-      setStep('done')
+      setErr(e instanceof Error ? e.message : String(e))
+      setStep('ready')
+    } finally {
+      setSubmitting(false)
     }
   }
+
 
   return (
     <Page
@@ -271,6 +297,39 @@ export default function Capture() {
         </Card>
       )}
 
+      {step === 'ready' && (
+        <div className="mo-page space-y-3">
+          {err && <ErrorBar text={err} onRetry={submitPages} />}
+          <Card className="!p-4">
+            <p className="text-[13px] font-extrabold">已上传 {pages.length} 页</p>
+            <p className="mo-muted mt-1">
+              {examId > 0 ? '按顺序对应答题卡第 1、2 页，提交后进入考试批改。' : '按顺序对应答题卡第 1、2 页。'}
+            </p>
+            <div className="mt-3 flex gap-2 overflow-x-auto">
+              {pages.map((p, i) => (
+                <div key={p.fileId} className="w-[74px] shrink-0 overflow-hidden rounded-xl border border-brand-100 bg-white">
+                  <img src={p.preview} alt={`第 ${i + 1} 页`} className="h-[92px] w-full object-cover" />
+                  <p className="py-1 text-center text-[10px] font-bold text-ink-soft">第 {i + 1} 页</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+          <div className="flex gap-2">
+            <Btn variant="ghost" onClick={() => setStep('pick')}>继续拍一页</Btn>
+            <Btn block disabled={submitting || !pages.length} onClick={() => void submitPages()}>
+              {submitting ? '提交中…' : `提交识别（${pages.length} 页）`}
+            </Btn>
+          </div>
+          <button
+            type="button"
+            className="w-full text-center text-[10.5px] font-bold text-ink-soft/55"
+            onClick={() => { setPages([]); setStep('pick') }}
+          >
+            清空重拍
+          </button>
+        </div>
+      )}
+
       {step === 'done' && result && (
         <div className="mo-page space-y-3">
           {err && <ErrorBar text={err} onRetry={cropAndUpload} />}
@@ -314,7 +373,7 @@ export default function Capture() {
           )}
 
           <div className="flex gap-2">
-            <Btn variant="ghost" onClick={() => { setStep('pick'); setSrc(''); setResult(null); setSaved([]) }}>
+            <Btn variant="ghost" onClick={() => { setStep('pick'); setSrc(''); setResult(null); setSaved([]); setPages([]) }}>
               再拍一张
             </Btn>
             <Btn block onClick={() => nav('/m/exams')}>
@@ -337,7 +396,7 @@ export default function Capture() {
   )
 }
 
-const STEP_LABEL: Record<Step, string> = { pick: '选择图片', crop: '裁切取景', scan: '识别中', done: '识别结果' }
+const STEP_LABEL: Record<Step, string> = { pick: '选择图片', crop: '裁切取景', scan: '识别中', ready: '待提交', done: '识别结果' }
 
 const CORNERS: Array<{ key: DragMode; style: React.CSSProperties; cursor: string }> = [
   { key: 'nw', style: { left: -12, top: -12 }, cursor: 'nwse-resize' },
