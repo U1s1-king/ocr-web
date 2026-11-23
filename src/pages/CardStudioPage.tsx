@@ -656,26 +656,6 @@ export default function CardStudioPage() {
             )}
           </Card>
 
-          <Card className="!p-4">
-            <p className="mb-2 text-[11px] font-black text-ink">模板 JSON 预览（提交后端的标准 v1）</p>
-            <pre className="max-h-52 overflow-auto rounded-xl bg-neutral-900 p-3 text-[10px] leading-relaxed text-neutral-200">
-              {JSON.stringify(
-                {
-                  schemaVersion: doc.content.schemaVersion,
-                  unit: doc.content.unit,
-                  canvas: doc.content.canvas,
-                  markers: doc.content.markers.length,
-                  blocks: (doc.content.blocks ?? []).length,
-                  questions: doc.content.questions.length,
-                  questionTypes: countTypes(doc),
-                  barcode: Boolean(doc.content.barcode),
-                  firstQuestion: doc.content.questions[0] ?? null,
-                },
-                null,
-                2,
-              )}
-            </pre>
-          </Card>
         </div>
       </div>
     </div>
@@ -705,9 +685,4 @@ function totalScore(spec: CardSpec): number {
   return Math.round((o + s) * 10) / 10
 }
 
-function countTypes(doc: { content: { questions: Array<{ type: string }> } }) {
-  return {
-    mark: doc.content.questions.filter((q) => q.type === 'mark').length,
-    subjective: doc.content.questions.filter((q) => q.type === 'subjective').length,
-  }
-}
+

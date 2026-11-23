@@ -57,6 +57,14 @@ interface Live {
  * PS 式精调：react-moveable 拖动/缩放/旋转/吸附 + selecto 框选多选 +
  * 标尺/图层/mm 数值面板/撤销重做/对齐分布/实时校验。
  */
+function renumberQuestions(doc: CardDoc) {
+  const ordered = [...doc.content.questions].sort((a, b) => (a.displayNumber ?? 0) - (b.displayNumber ?? 0) || a.region.y - b.region.y)
+  ordered.forEach((q, i) => {
+    q.displayNumber = i + 1
+  })
+  doc.content.questions = ordered
+}
+
 function ensureDoubleSide(doc: CardDoc): CardDoc {
   if (doc.back) return doc
   return withBack(doc, createSubjectBack(doc))
@@ -585,21 +593,23 @@ export default function CardEditorPage() {
     pushHistory()
     const next = cloneDoc(doc)
     const id2 = nextQuestionId(next)
-    const n = Math.max(1, ...next.content.questions.map((q) => q.displayNumber ?? 0)) + 1
+    const selectedQ = sel[0] ? next.content.questions.find((q) => q.id === sel[0]) : undefined
+    const ordered = [...next.content.questions].sort((a, b) => (a.displayNumber ?? 0) - (b.displayNumber ?? 0) || a.region.y - b.region.y)
+    const insertAt = selectedQ ? Math.max(0, ordered.findIndex((q) => q.id === selectedQ.id) + 1) : ordered.length
+    const y = selectedQ
+      ? u2mm(selectedQ.region.y + selectedQ.region.height) + 3
+      : ordered.length
+        ? Math.max(...ordered.map((q) => u2mm(q.region.y + q.region.height))) + 3
+        : 20
     const region =
       type === 'mark'
-        ? { x: mm2u(14), y: mm2u(14 + next.content.questions.length * 8), width: mm2u(70), height: mm2u(7) }
-        : {
-            x: mm2u(14),
-            y: mm2u(14 + next.content.questions.length * 12),
-            width: mm2u(dims.w - 28),
-            height: mm2u(30),
-          }
+        ? { x: mm2u(14), y: mm2u(y), width: mm2u(70), height: mm2u(7) }
+        : { x: mm2u(14), y: mm2u(y), width: mm2u(dims.w - 28), height: mm2u(30) }
     const q: Question =
       type === 'mark'
         ? {
             id: id2,
-            displayNumber: n,
+            displayNumber: 1,
             type: 'mark',
             score: 2,
             region,
@@ -608,8 +618,10 @@ export default function CardEditorPage() {
               region: { x: round3((6 + i * 5) / 70), y: 0.18, width: round3(4.1 / 70), height: 0.64 },
             })),
           }
-        : { id: id2, displayNumber: n, type: 'subjective', score: 10, region }
-    next.content.questions.push(q)
+        : { id: id2, displayNumber: 1, type: 'subjective', score: 10, region }
+    ordered.splice(insertAt, 0, q)
+    next.content.questions = ordered
+    renumberQuestions(next)
     if (type === 'subjective') next.qmeta[id2] = { style: 'lines', rows: 5 }
     setDoc(next)
     setDirty(true)
