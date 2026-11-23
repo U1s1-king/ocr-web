@@ -122,7 +122,14 @@ export default function ResultDetailPage() {
             </div>
           )}
 
-          <p className="mt-5 flex items-center justify-center gap-1.5 text-[10px] text-ink-soft/50">
+          <button
+            type="button"
+            className="mt-4 w-full rounded-xl bg-brand-50 px-3 py-2 text-[11.5px] font-extrabold text-brand-700"
+            onClick={() => nav('/m/reviews')}
+          >
+            去人工复核
+          </button>
+          <p className="mt-2 flex items-center justify-center gap-1.5 text-[10px] text-ink-soft/50">
             <IcSpark style={{ fontSize: 11 }} /> 存疑题建议人工复核
           </p>
         </>

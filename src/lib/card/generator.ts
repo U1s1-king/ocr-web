@@ -626,6 +626,21 @@ export interface GeneratedCard {
  * - 主观题按题量从中间分开，背面每个大题占满一整栏
  * - 数学/理科背面三栏，文科两栏，语文/英语一栏
  */
+function clampContentToPage(doc: CardDoc): CardDoc {
+  const page = paperMm(doc.meta.paperSize, doc.meta.orientation)
+  const maxBottomMm = page.h - 11
+  const fit = (item: { region: { y: number; height: number } }) => {
+    const y = u2mm(item.region.y)
+    const bottom = y + u2mm(item.region.height)
+    if (bottom <= maxBottomMm) return
+    const remain = Math.max(2, maxBottomMm - y)
+    item.region.height = mm2u(remain)
+  }
+  ;(doc.content.questions ?? []).forEach(fit)
+  ;(doc.content.blocks ?? []).forEach(fit)
+  return doc
+}
+
 function finalizeTwoPage(front: CardDoc, back: CardDoc): CardDoc {
   const page = paperMm(front.meta.paperSize, front.meta.orientation)
   const subject = front.meta.subject || '答题卡'
@@ -645,6 +660,8 @@ function finalizeTwoPage(front: CardDoc, back: CardDoc): CardDoc {
     })
     back.bmeta[id] = { kind: 'pageFooter' }
   }
+  clampContentToPage(front)
+  clampContentToPage(back)
   return {
     ...front,
     back: {
