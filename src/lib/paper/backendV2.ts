@@ -7,6 +7,7 @@ import type {
 } from '../../api/types'
 import type { PaperV2, PaperV2Page, PaperV2Question, RawPaperDetail } from '../../api/typesV2'
 import type { PaperDetail } from '../../m/api'
+import { docFromContent } from '../card/generator'
 
 /** 判断是不是后端 v2 包装（兼容部分文档里仍写 schemaVersion:1 的旧示例） */
 export function isPaperV2(value: unknown): value is PaperV2 {
@@ -126,6 +127,30 @@ export function normalizePaperDetail(raw: RawPaperDetail): PaperDetail {
     }
   }
   return { id: raw.id, name: raw.name, paper: {}, pageCount: { answerCard: 0, paper: 0 } }
+}
+
+/**
+ * 后端 v2（可能多页）→ 前端 CardDoc。
+ * 第一页作为正面，其余页合并进 doc.back，供打印/预览使用。
+ */
+export function paperV2ToCardDoc(doc: PaperV2, name: string): CardDoc {
+  const pages = doc.answerCard?.pages ?? []
+  if (!pages.length) return docFromContent(fromPaperV2(doc), name)
+  const build = (page: PaperV2Page) => {
+    const single: PaperV2 = {
+      ...doc,
+      answerCard: { ...doc.answerCard, pages: [page] },
+      paper: { pages: [] },
+    }
+    return docFromContent(fromPaperV2(single), name)
+  }
+  const front = build(pages[0])
+  const rest = pages.slice(1).map(build)
+  if (rest.length) {
+    const back = rest[rest.length - 1]
+    front.back = { content: back.content, qmeta: back.qmeta, bmeta: back.bmeta, hidden: [] }
+  }
+  return front
 }
 
 /* ========================================================================== */

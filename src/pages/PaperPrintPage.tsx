@@ -7,6 +7,7 @@ import { papersApi } from '../m/api'
 import { errorText } from '../api/client'
 import { resolveDoc, takeStashedDoc } from '../lib/card/store'
 import { validateCard } from '../lib/card/types'
+import { paperV2ToCardDoc } from '../lib/paper/backendV2'
 import { requestPrint } from '../lib/print'
 
 const PX_PER_MM = 96 / 25.4
@@ -38,8 +39,13 @@ export default function PaperPrintPage() {
         .get(pid)
         .then((p) => {
           setName(p.name)
-          const resolved = resolveDoc(pid, p.paper as never, p.name)
-          setDoc(resolved.doc)
+          const raw = p.rawPaper
+          if (raw && raw.answerCard?.pages?.length > 1) {
+            setDoc(paperV2ToCardDoc(raw, p.name))
+          } else {
+            const resolved = resolveDoc(pid, p.paper as never, p.name)
+            setDoc(resolved.doc)
+          }
         })
         .catch((e) => setErr(errorText(e)))
       return
