@@ -163,7 +163,9 @@ export function createSubjectBack(front: CardDoc): CardDoc {
     ]
     for (const p of parts) {
       questions.push({ id: p.id, displayNumber: undefined, type: 'subjective', score: p.score, region: { x: mm2u(14), y: mm2u(p.y), width: mm2u(page.w - 28), height: mm2u(p.h) } })
-      qmeta[p.id] = { style: 'grid', gridCols: 18, label: p.label }
+      qmeta[p.id] = p.id === 'back-writing-1'
+        ? { style: 'lines', rows: 12, label: p.label }
+        : { style: 'grid', gridCols: 18, label: p.label }
     }
     return finish(front, blocks, questions, qmeta, bmeta)
   }
