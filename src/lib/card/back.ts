@@ -169,7 +169,8 @@ export function createSubjectBack(front: CardDoc): CardDoc {
   }
 
   const science = /数学|math|物理|physics|化学|chemistry|生物|biology/.test(subject)
-  const cols = science ? 3 : 2
+  // A4 真卡背面通常两栏；A3 理科背面三栏
+  const cols = science ? (page.w >= 380 ? 3 : 2) : 2
   title('第Ⅱ卷 非选择题', 9)
   const gap = 5
   const margin = 14

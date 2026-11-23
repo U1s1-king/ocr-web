@@ -662,6 +662,15 @@ function splitSubjectPages(front: CardDoc): { doc: CardDoc } {
   const questions = front.content.questions ?? []
   const subjective = questions.filter((q) => q.type === 'subjective').sort((a, b) => a.region.y - b.region.y)
   const objective = questions.filter((q) => q.type !== 'subjective')
+  const subject = `${front.meta.subject ?? ''} ${front.meta.templateName ?? ''}`
+  const science = /数学|math|物理|physics|化学|chemistry|生物|biology/.test(subject)
+
+  // 语文作文、英语写作、文科材料题保留科目自带的整页背面；
+  // 只有数学/理科需要把大题均匀分到正反两面。
+  if (!science) {
+    const back = withHeaderFromFront(front, createSubjectBack(front))
+    return { doc: finalizeTwoPage(front, back) }
+  }
 
   // 少于 4 道主观题不拆，保持现有背面科目版式
   if (subjective.length < 4) {
