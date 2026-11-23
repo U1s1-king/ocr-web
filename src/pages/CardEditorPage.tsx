@@ -13,7 +13,7 @@ import { CardSheet } from '../lib/card/render'
 import { addChoiceGroup, addPresetBlock, addSubjectiveGroup, groupOf, splitGroup } from '../lib/card/components'
 import { BARCODE_FORMATS, validateBarcode } from '../lib/card/barcode'
 import { ANSWER_CARD_BARCODE_AREA } from '../lib/barcode/templates'
-import { backAsDoc, withBack, type BackPreset } from '../lib/card/back'
+import { backAsDoc, createSubjectBack, withBack } from '../lib/card/back'
 import { autoInsertGroup } from '../lib/card/autoLayout'
 import { reflowTwoPages } from '../lib/card/reflow'
 import {
@@ -57,6 +57,11 @@ interface Live {
  * PS 式精调：react-moveable 拖动/缩放/旋转/吸附 + selecto 框选多选 +
  * 标尺/图层/mm 数值面板/撤销重做/对齐分布/实时校验。
  */
+function ensureDoubleSide(doc: CardDoc): CardDoc {
+  if (doc.back) return doc
+  return withBack(doc, createSubjectBack(doc))
+}
+
 export default function CardEditorPage() {
   const { id } = useParams()
   const nav = useNavigate()
@@ -120,8 +125,9 @@ export default function CardEditorPage() {
       if (local) {
         const d = takeStashedDoc() ?? readLocalDoc()
         if (d) {
-          setFrontDoc(d)
-          setBackDoc(d.back ? backAsDoc(d) : null)
+          const dual = ensureDoubleSide(d)
+          setFrontDoc(dual)
+          setBackDoc(dual.back ? backAsDoc(dual) : null)
           setSide('front')
           setTitle(d.meta.title || '本地答题卡')
           setName(d.meta.title || '本地答题卡')
@@ -140,8 +146,9 @@ export default function CardEditorPage() {
         const p = await papersApi.get(pid)
         if (!alive) return
         const resolved = resolveDoc(pid, p.paper as never, p.name)
-        setFrontDoc(resolved.doc)
-        setBackDoc(resolved.doc.back ? backAsDoc(resolved.doc) : null)
+        const dual = ensureDoubleSide(resolved.doc)
+        setFrontDoc(dual)
+        setBackDoc(dual.back ? backAsDoc(dual) : null)
         setSide('front')
         setTitle(p.name)
         setName(p.name)
@@ -149,8 +156,9 @@ export default function CardEditorPage() {
         if (!alive) return
         const fallback = readLocalDoc()
         if (fallback) {
-          setFrontDoc(fallback)
-          setBackDoc(fallback.back ? backAsDoc(fallback) : null)
+          const dual = ensureDoubleSide(fallback)
+          setFrontDoc(dual)
+          setBackDoc(dual.back ? backAsDoc(dual) : null)
           setSide('front')
           setTitle(fallback.meta.title || '本地答题卡')
           setLoadErr(`后端读取失败（${errorText(e)}），已打开本地草稿`)
@@ -262,29 +270,6 @@ export default function CardEditorPage() {
     setSide(next)
     setSel([])
     setPrimary(null)
-  }
-
-  function enableBack(preset: BackPreset) {
-    if (!frontDoc) return
-    pushHistory()
-    void preset
-    // 强制两页排版：把同一张答题卡的内容重新分配到正反两面
-    const result = reflowTwoPages(frontDoc, backDoc)
-    setFrontDoc(result.front)
-    setBackDoc(result.back)
-    setSide('front')
-    setSel([])
-    setPrimary(null)
-    setDirty(true)
-    toast(`已开启双面：${result.profile.label}`, 'ok')
-  }
-
-  function disableBack() {
-    setBackDoc(null)
-    setSide('front')
-    setSel([])
-    setPrimary(null)
-    setDirty(true)
   }
 
   function repage() {
@@ -1002,19 +987,10 @@ export default function CardEditorPage() {
                 </button>
               )}
             </div>
-            {!backDoc ? (
-              <button type="button" className="rounded-lg border border-brand-200 bg-white px-2 py-1 text-[10.5px] font-bold text-ink-soft hover:bg-brand-50" onClick={() => enableBack('blank')}>
-                双面自动分页
+            {backDoc && (
+              <button type="button" className="rounded-lg border border-brand-200 bg-white px-2 py-1 text-[10.5px] font-bold text-ink-soft hover:bg-brand-50" onClick={repage}>
+                重新自动分页
               </button>
-            ) : (
-              <>
-                <button type="button" className="rounded-lg border border-brand-200 bg-white px-2 py-1 text-[10.5px] font-bold text-ink-soft hover:bg-brand-50" onClick={repage}>
-                  重新自动分页
-                </button>
-                <button type="button" className="rounded-lg border border-red-200 bg-white px-2 py-1 text-[10.5px] font-bold text-red-500 hover:bg-red-50" onClick={disableBack}>
-                  关闭双面
-                </button>
-              </>
             )}
             <Button variant="ghost" size="sm" onClick={undo}>
               撤销

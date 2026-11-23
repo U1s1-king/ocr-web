@@ -9,7 +9,7 @@ import { BARCODE_FORMATS, validateBarcode } from '../../lib/card/barcode'
 import { ANSWER_CARD_BARCODE_AREA } from '../../lib/barcode/templates'
 import { cloneDoc, mm2u, paperMm, u2mm, type CardDoc, type CardGroup, type CardBarcode, type CardBarcodeFormat } from '../../lib/card/types'
 import { resolveDoc, savePaperDoc } from '../../lib/card/store'
-import { backAsDoc, createBackDoc, withBack } from '../../lib/card/back'
+import { backAsDoc, createSubjectBack, withBack } from '../../lib/card/back'
 import { reflowTwoPages } from '../../lib/card/reflow'
 import { Btn, Card, Page, Sheet } from '../ui'
 import { IcBack, IcLayers, IcPlus, IcSliders, IcTrash } from '../icons'
@@ -65,8 +65,9 @@ export default function CardEdit() {
       .get(pid)
       .then((p) => {
         const resolved = resolveDoc(pid, p.paper as never, p.name)
-        setFrontDoc(resolved.doc)
-        setBackDoc(resolved.doc.back ? backAsDoc(resolved.doc) : null)
+        const dual = resolved.doc.back ? resolved.doc : withBack(resolved.doc, createSubjectBack(resolved.doc))
+        setFrontDoc(dual)
+        setBackDoc(dual.back ? backAsDoc(dual) : null)
         setSide('front')
       })
       .catch((e) => setErr(e instanceof Error ? e.message : '载入失败'))
@@ -325,17 +326,7 @@ export default function CardEdit() {
       <div className="mb-2 flex flex-wrap items-center gap-1.5">
         <Btn sm variant={side === 'front' ? undefined : 'ghost'} onClick={() => setSide('front')}>正面</Btn>
         {backDoc && <Btn sm variant={side === 'back' ? undefined : 'ghost'} onClick={() => setSide('back')}>背面</Btn>}
-        {!backDoc ? (
-          <Btn sm variant="ghost" onClick={() => {
-            if (!frontDoc) return
-            const re = reflowTwoPages(frontDoc, createBackDoc(frontDoc, 'blank'))
-            setFrontDoc(re.front)
-            setBackDoc(re.back)
-            setSide('front')
-            setDirty(true)
-            toast(`已生成双面：${re.profile.label}`, 'ok')
-          }}>双面自动分页</Btn>
-        ) : (
+        {backDoc && (
           <Btn sm variant="ghost" onClick={() => {
             if (!frontDoc) return
             const re = reflowTwoPages(frontDoc, backDoc)
